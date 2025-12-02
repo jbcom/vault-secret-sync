@@ -81,11 +81,15 @@ jobs:
           sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" \
             deploy/charts/vault-secret-sync/Chart.yaml
 
-          # Update subcharts
-          for subchart in deploy/charts/vault-secret-sync/charts/*/Chart.yaml; do
-            sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" "$subchart"
-            sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" "$subchart"
-          done
+          # Update subcharts (with existence check)
+          if ls deploy/charts/vault-secret-sync/charts/*/Chart.yaml 1> /dev/null 2>&1; then
+            for subchart in deploy/charts/vault-secret-sync/charts/*/Chart.yaml; do
+              if [ -f "$subchart" ]; then
+                sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" "$subchart"
+                sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" "$subchart"
+              fi
+            done
+          fi
 
           # Update dependency versions
           sed -i "s/version: 0.1.0/version: ${{ steps.version.outputs.VERSION }}/g" \

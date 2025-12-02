@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -86,19 +87,14 @@ func NewClient(cfg *DopplerClient) (*DopplerClient, error) {
 	})
 	l.Trace("start")
 
-	vc := &DopplerClient{}
-	jd, err := json.Marshal(cfg)
-	if err != nil {
-		l.Debugf("error: %v", err)
-		return nil, err
-	}
-	err = json.Unmarshal(jd, &vc)
-	if err != nil {
-		l.Debugf("error: %v", err)
-		return nil, err
+	if cfg == nil {
+		return nil, errors.New("config is nil")
 	}
 
-	l.Debugf("client=%+v", vc)
+	vc := cfg.DeepCopy()
+
+	// Log without exposing sensitive token
+	l.Debugf("client created for project=%s config=%s", vc.Project, vc.Config)
 	l.Trace("end")
 	return vc, nil
 }
@@ -160,6 +156,8 @@ func (c *DopplerClient) transformName(name string) string {
 		return strings.ToUpper(name)
 	case "lower":
 		return strings.ToLower(name)
+	case "none":
+		return name
 	default:
 		return strings.ToUpper(name) // Doppler convention is UPPER_SNAKE_CASE
 	}
@@ -204,8 +202,10 @@ func (c *DopplerClient) doRequest(ctx context.Context, method, path string, body
 	}
 
 	if resp.StatusCode >= 400 {
-		l.Debugf("API error: status=%d body=%s", resp.StatusCode, string(respBody))
-		return nil, fmt.Errorf("API error: status=%d body=%s", resp.StatusCode, string(respBody))
+		// Log detailed error for debugging but don't expose in error message
+		// as response body may contain sensitive information
+		l.Debugf("API error: status=%d", resp.StatusCode)
+		return nil, fmt.Errorf("API error: status=%d", resp.StatusCode)
 	}
 
 	return respBody, nil
@@ -221,7 +221,7 @@ func (c *DopplerClient) GetSecret(ctx context.Context, name string) ([]byte, err
 	l.Trace("start")
 
 	path := fmt.Sprintf("/configs/config/secret?project=%s&config=%s&name=%s",
-		c.Project, c.Config, c.transformName(name))
+		url.QueryEscape(c.Project), url.QueryEscape(c.Config), url.QueryEscape(c.transformName(name)))
 
 	respBody, err := c.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -261,13 +261,6 @@ func (c *DopplerClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta,
 		return nil, fmt.Errorf("failed to unmarshal secrets: %w", err)
 	}
 
-	// If merge is false, delete existing secrets first
-	if c.Merge != nil && !*c.Merge {
-		if err := c.DeleteSecret(ctx, ""); err != nil {
-			l.Warnf("failed to delete existing secrets: %v", err)
-		}
-	}
-
 	// Transform secrets to Doppler format
 	dopplerSecrets := make(map[string]string)
 	for k, v := range secrets {
@@ -300,7 +293,13 @@ func (c *DopplerClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta,
 	}
 
 	// Use the secrets update endpoint
+	// If merge is true, add ?merge=true to merge with existing secrets
+	// If merge is false (or nil), Doppler replaces all secrets by default
 	apiPath := "/configs/config/secrets"
+	if c.Merge != nil && *c.Merge {
+		apiPath += "?merge=true"
+	}
+
 	reqBody := map[string]interface{}{
 		"project": c.Project,
 		"config":  c.Config,
@@ -335,25 +334,28 @@ func (c *DopplerClient) DeleteSecret(ctx context.Context, name string) error {
 			return fmt.Errorf("failed to list secrets: %w", err)
 		}
 
-		// Delete each secret
+		// Delete each secret - names from ListSecrets are already in Doppler format
+		// so we use deleteSingleSecretRaw to avoid double transformation
 		for _, secretName := range secrets {
-			if err := c.deleteSingleSecret(ctx, secretName); err != nil {
+			if err := c.deleteSingleSecretRaw(ctx, secretName); err != nil {
 				l.Warnf("failed to delete secret %s: %v", secretName, err)
 			}
 		}
 		return nil
 	}
 
-	return c.deleteSingleSecret(ctx, name)
+	// For explicit name, apply transformation
+	return c.deleteSingleSecretRaw(ctx, c.transformName(name))
 }
 
-// deleteSingleSecret deletes a single secret from Doppler
-func (c *DopplerClient) deleteSingleSecret(ctx context.Context, name string) error {
+// deleteSingleSecretRaw deletes a single secret from Doppler using the exact name provided
+// (no transformation applied - caller is responsible for providing the correct name)
+func (c *DopplerClient) deleteSingleSecretRaw(ctx context.Context, name string) error {
 	apiPath := "/configs/config/secret"
 	reqBody := map[string]interface{}{
 		"project": c.Project,
 		"config":  c.Config,
-		"name":    c.transformName(name),
+		"name":    name,
 	}
 
 	_, err := c.doRequest(ctx, http.MethodDelete, apiPath, reqBody)
@@ -370,7 +372,7 @@ func (c *DopplerClient) ListSecrets(ctx context.Context, path string) ([]string,
 	defer l.Trace("end")
 
 	apiPath := fmt.Sprintf("/configs/config/secrets?project=%s&config=%s",
-		c.Project, c.Config)
+		url.QueryEscape(c.Project), url.QueryEscape(c.Config))
 
 	respBody, err := c.doRequest(ctx, http.MethodGet, apiPath, nil)
 	if err != nil {
