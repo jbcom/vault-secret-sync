@@ -12,18 +12,20 @@ var (
 		DriverNameVault,
 		DriverNameHttp,
 		DriverNameDoppler,
+		DriverNameIdentityCenter,
 	}
 )
 
 type DriverName string
 
 const (
-	DriverNameAws     DriverName = "aws"
-	DriverNameGcp     DriverName = "gcp"
-	DriverNameGitHub  DriverName = "github"
-	DriverNameVault   DriverName = "vault"
-	DriverNameHttp    DriverName = "http"
-	DriverNameDoppler DriverName = "doppler"
+	DriverNameAws            DriverName = "aws"
+	DriverNameGcp            DriverName = "gcp"
+	DriverNameGitHub         DriverName = "github"
+	DriverNameVault          DriverName = "vault"
+	DriverNameHttp           DriverName = "http"
+	DriverNameDoppler        DriverName = "doppler"
+	DriverNameIdentityCenter DriverName = "awsIdentityCenter"
 )
 
 func DriverIsSupported(driver DriverName) bool {

@@ -7,6 +7,7 @@ import (
 	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
 	"github.com/robertlestak/vault-secret-sync/pkg/driver"
 	"github.com/robertlestak/vault-secret-sync/stores/aws"
+	"github.com/robertlestak/vault-secret-sync/stores/awsidentitycenter"
 	"github.com/robertlestak/vault-secret-sync/stores/doppler"
 	"github.com/robertlestak/vault-secret-sync/stores/gcp"
 	"github.com/robertlestak/vault-secret-sync/stores/github"
@@ -62,6 +63,9 @@ func setStoreGlobalDefaults(s *v1alpha1.VaultSecretSync) error {
 		if d.AWS != nil && DefaultConfigs[driver.DriverNameAws] != nil {
 			err = d.AWS.SetDefaults(DefaultConfigs[driver.DriverNameAws].AWS)
 		}
+		if d.IdentityCenter != nil && DefaultConfigs[driver.DriverNameIdentityCenter] != nil {
+			err = d.IdentityCenter.SetDefaults(DefaultConfigs[driver.DriverNameIdentityCenter].IdentityCenter)
+		}
 		if d.Doppler != nil && DefaultConfigs[driver.DriverNameDoppler] != nil {
 			err = d.Doppler.SetDefaults(DefaultConfigs[driver.DriverNameDoppler].Doppler)
 		}
@@ -109,6 +113,13 @@ func InitSyncConfigClients(sc v1alpha1.VaultSecretSync) (*SyncClients, error) {
 	for _, d := range sc.Spec.Dest {
 		if d.AWS != nil {
 			client, err := aws.NewClient(d.AWS)
+			if err != nil {
+				l.Error(err)
+				return nil, err
+			}
+			scs.Dest = append(scs.Dest, client)
+		} else if d.IdentityCenter != nil {
+			client, err := awsidentitycenter.NewClient(d.IdentityCenter)
 			if err != nil {
 				l.Error(err)
 				return nil, err
