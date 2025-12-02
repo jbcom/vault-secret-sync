@@ -30,10 +30,11 @@ RUN go mod download && go mod verify
 # Copy the source code into the container
 COPY . .
 
-# Run tests
-RUN go test ./...
+# Ensure dependencies are synchronized
+RUN go mod tidy
 
 # Build the Go application
+# Note: Tests are run separately in CI, not during Docker build
 RUN go build -o /bin/vss cmd/vss/*.go
 
 FROM ubuntu:22.04 as vss

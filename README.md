@@ -6,9 +6,19 @@ Currently, the following secret stores are supported:
 
 - Vault (kv2)
 - AWS Secrets Manager
+- AWS Identity Center (account discovery)
 - GCP Secret Manager
-- GitHub Repository
-- GitHub Organization
+- GitHub Repository / Organization
+- Doppler
+
+## jbcom Fork Enhancements
+
+This fork ([jbcom/vault-secret-sync](https://github.com/jbcom/vault-secret-sync)) adds:
+
+- **Doppler Store**: Sync secrets to Doppler projects/configs
+- **AWS Identity Center Store**: Dynamic account discovery based on SSO group membership
+- **CI/CD**: Automated testing, Docker image publishing, and Helm chart releases
+- **Security Fixes**: URL parameter escaping, credential logging redaction
 
 ## High Level Architecture
 
@@ -91,6 +101,20 @@ spec:
       labels:
         key: "value"
         another: "label"
+  - doppler:
+      project: "my-project"
+      config: "production"
+      token: "dp.st.xxx"  # Or use tokenSecret for K8s secret reference
+  - awsIdentityCenter:
+      # Discover AWS accounts based on Identity Center group membership
+      region: "us-east-1"
+      groupName: "Developers"
+      accountMapping:
+        "*@example.com":
+          accountId: "123456789012"
+          accountName: "sandbox"
+          executionRoleArn: "arn:aws:iam::123456789012:role/SecretsSync"
+          classification: "sandbox"
   - http:
       url: "https://example.com/my/app"
       method: "POST"

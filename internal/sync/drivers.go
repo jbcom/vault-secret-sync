@@ -38,6 +38,12 @@ func SetStoreDefaults(sc *v1alpha1.StoreConfig) {
 	if sc.AWS != nil {
 		DefaultConfigs[driver.DriverNameAws] = sc
 	}
+	if sc.IdentityCenter != nil {
+		DefaultConfigs[driver.DriverNameIdentityCenter] = sc
+	}
+	if sc.Doppler != nil {
+		DefaultConfigs[driver.DriverNameDoppler] = sc
+	}
 	if sc.GCP != nil {
 		DefaultConfigs[driver.DriverNameGcp] = sc
 	}
@@ -57,6 +63,12 @@ func DestinationStoreNames(sc v1alpha1.VaultSecretSync) []driver.DriverName {
 	for _, d := range sc.Spec.Dest {
 		if d.AWS != nil {
 			destDrivers = append(destDrivers, driver.DriverNameAws)
+		}
+		if d.IdentityCenter != nil {
+			destDrivers = append(destDrivers, driver.DriverNameIdentityCenter)
+		}
+		if d.Doppler != nil {
+			destDrivers = append(destDrivers, driver.DriverNameDoppler)
 		}
 		if d.GCP != nil {
 			destDrivers = append(destDrivers, driver.DriverNameGcp)
