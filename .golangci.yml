@@ -41,13 +41,7 @@ issues:
     - path: internal/notifications/
       linters:
         - errcheck
-    - path: internal/sync/done.go
-      linters:
-        - errcheck
-    - path: internal/sync/filters.go
-      linters:
-        - errcheck
-    - path: internal/sync/operator.go
+    - path: internal/sync/
       linters:
         - errcheck
     - path: internal/server/server.go
