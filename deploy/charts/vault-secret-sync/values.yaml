@@ -110,10 +110,10 @@ vault-secret-sync-operator:
   replicaCount: 1
 
   image:
-    repository: robertlestak/vault-secret-sync
-    pullPolicy: Always
+    repository: ghcr.io/jbcom/vault-secret-sync
+    pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
+    tag: ""
 
   imagePullSecrets: []
 
@@ -181,10 +181,10 @@ vault-secret-sync-events:
   replicaCount: 1
 
   image:
-    repository: robertlestak/vault-secret-sync
-    pullPolicy: Always
+    repository: ghcr.io/jbcom/vault-secret-sync
+    pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
+    tag: ""
 
   imagePullSecrets: []
 

@@ -7,8 +7,8 @@ Currently, the following secret stores are supported:
 - Vault (kv2)
 - AWS Secrets Manager
 - GCP Secret Manager
-- GitHub Repository
-- GitHub Organization
+- GitHub Repository / Organization
+- Doppler
 
 ## High Level Architecture
 
@@ -91,6 +91,10 @@ spec:
       labels:
         key: "value"
         another: "label"
+  - doppler:
+      project: "my-project"
+      config: "production"
+      token: "dp.st.xxx"  # Or use tokenSecret for K8s secret reference
   - http:
       url: "https://example.com/my/app"
       method: "POST"
