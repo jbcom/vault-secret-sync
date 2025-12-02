@@ -40,6 +40,9 @@ issues:
     - path: internal/notifications/email.go
       linters:
         - errcheck
+    - path: internal/notifications/slack.go
+      linters:
+        - errcheck
     - path: internal/sync/done.go
       linters:
         - errcheck
