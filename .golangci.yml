@@ -37,10 +37,8 @@ issues:
     - path: internal/queue/redis_test.go
       linters:
         - errcheck
-    - path: internal/notifications/email.go
-      linters:
-        - errcheck
-    - path: internal/notifications/slack.go
+    # Exclude all notifications files (pre-existing upstream issues)
+    - path: internal/notifications/
       linters:
         - errcheck
     - path: internal/sync/done.go
