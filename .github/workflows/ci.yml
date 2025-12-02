@@ -30,8 +30,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsodium-dev
 
-      - name: Download dependencies
-        run: go mod download
+      - name: Download and tidy dependencies
+        run: |
+          go mod download
+          go mod tidy
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
@@ -60,10 +62,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsodium-dev
 
+      - name: Download and tidy dependencies
+        run: |
+          go mod download
+          go mod tidy
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.55.2
+          version: v1.62.2
           args: --timeout=5m
 
   build:
