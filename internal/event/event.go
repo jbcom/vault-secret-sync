@@ -19,7 +19,7 @@ type VaultEvent struct {
 // AuditEvent contains a single AuditEvent as received by the operator
 // the operator receives the event as-is, and supplements this with contextual http information
 type AuditEvent struct {
-	Event       audit.ResponseEntry
+	Event       audit.Event
 	VaultTenant string
 	RemoteAddr  string
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
 	"github.com/robertlestak/vault-secret-sync/pkg/driver"
 	"github.com/robertlestak/vault-secret-sync/stores/aws"
+	"github.com/robertlestak/vault-secret-sync/stores/awsidentitycenter"
+	"github.com/robertlestak/vault-secret-sync/stores/doppler"
 	"github.com/robertlestak/vault-secret-sync/stores/gcp"
 	"github.com/robertlestak/vault-secret-sync/stores/github"
 	"github.com/robertlestak/vault-secret-sync/stores/httpstore"
@@ -61,6 +63,12 @@ func setStoreGlobalDefaults(s *v1alpha1.VaultSecretSync) error {
 		if d.AWS != nil && DefaultConfigs[driver.DriverNameAws] != nil {
 			err = d.AWS.SetDefaults(DefaultConfigs[driver.DriverNameAws].AWS)
 		}
+		if d.IdentityCenter != nil && DefaultConfigs[driver.DriverNameIdentityCenter] != nil {
+			err = d.IdentityCenter.SetDefaults(DefaultConfigs[driver.DriverNameIdentityCenter].IdentityCenter)
+		}
+		if d.Doppler != nil && DefaultConfigs[driver.DriverNameDoppler] != nil {
+			err = d.Doppler.SetDefaults(DefaultConfigs[driver.DriverNameDoppler].Doppler)
+		}
 		if d.GCP != nil && DefaultConfigs[driver.DriverNameGcp] != nil {
 			err = d.GCP.SetDefaults(DefaultConfigs[driver.DriverNameGcp].GCP)
 		}
@@ -102,50 +110,58 @@ func InitSyncConfigClients(sc v1alpha1.VaultSecretSync) (*SyncClients, error) {
 		l.Error(err)
 		return nil, err
 	}
-	for i, d := range sc.Spec.Dest {
-		var err error
+	for _, d := range sc.Spec.Dest {
 		if d.AWS != nil {
-			scs.Dest = append(scs.Dest, &aws.AwsClient{})
-			scs.Dest[i], err = aws.NewClient(d.AWS)
+			client, err := aws.NewClient(d.AWS)
 			if err != nil {
 				l.Error(err)
 				return nil, err
 			}
-		}
-		if d.GCP != nil {
-			scs.Dest = append(scs.Dest, &gcp.GcpClient{})
-			scs.Dest[i], err = gcp.NewClient(d.GCP)
+			scs.Dest = append(scs.Dest, client)
+		} else if d.IdentityCenter != nil {
+			client, err := awsidentitycenter.NewClient(d.IdentityCenter)
 			if err != nil {
 				l.Error(err)
 				return nil, err
 			}
-		}
-		if d.GitHub != nil {
-			scs.Dest = append(scs.Dest, &github.GitHubClient{})
-			scs.Dest[i], err = github.NewClient(d.GitHub)
+			scs.Dest = append(scs.Dest, client)
+		} else if d.Doppler != nil {
+			client, err := doppler.NewClient(d.Doppler)
 			if err != nil {
 				l.Error(err)
 				return nil, err
 			}
-		}
-		if d.Vault != nil {
-			scs.Dest = append(scs.Dest, &vault.VaultClient{})
-			scs.Dest[i], err = vault.NewClient(d.Vault)
+			scs.Dest = append(scs.Dest, client)
+		} else if d.GCP != nil {
+			client, err := gcp.NewClient(d.GCP)
 			if err != nil {
 				l.Error(err)
 				return nil, err
 			}
-		}
-		if d.HTTP != nil {
-			scs.Dest = append(scs.Dest, &httpstore.HTTPClient{})
-			scs.Dest[i], err = httpstore.NewClient(d.HTTP)
+			scs.Dest = append(scs.Dest, client)
+		} else if d.GitHub != nil {
+			client, err := github.NewClient(d.GitHub)
 			if err != nil {
 				l.Error(err)
 				return nil, err
 			}
+			scs.Dest = append(scs.Dest, client)
+		} else if d.Vault != nil {
+			client, err := vault.NewClient(d.Vault)
+			if err != nil {
+				l.Error(err)
+				return nil, err
+			}
+			scs.Dest = append(scs.Dest, client)
+		} else if d.HTTP != nil {
+			client, err := httpstore.NewClient(d.HTTP)
+			if err != nil {
+				l.Error(err)
+				return nil, err
+			}
+			scs.Dest = append(scs.Dest, client)
 		}
 		l.WithField("dest", scs.Dest).Trace("added dest")
-
 	}
 	l.Trace("end")
 	return scs, nil

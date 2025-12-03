@@ -4,6 +4,8 @@ package v1alpha1
 
 import (
 	"github.com/robertlestak/vault-secret-sync/stores/aws"
+	"github.com/robertlestak/vault-secret-sync/stores/awsidentitycenter"
+	"github.com/robertlestak/vault-secret-sync/stores/doppler"
 	"github.com/robertlestak/vault-secret-sync/stores/gcp"
 	"github.com/robertlestak/vault-secret-sync/stores/github"
 	"github.com/robertlestak/vault-secret-sync/stores/httpstore"
@@ -37,11 +39,13 @@ const (
 )
 
 type StoreConfig struct {
-	AWS    *aws.AwsClient        `json:"aws,omitempty" yaml:"aws,omitempty"`
-	GCP    *gcp.GcpClient        `json:"gcp,omitempty" yaml:"gcp,omitempty"`
-	GitHub *github.GitHubClient  `json:"github,omitempty" yaml:"github,omitempty"`
-	Vault  *vault.VaultClient    `json:"vault,omitempty" yaml:"vault,omitempty"`
-	HTTP   *httpstore.HTTPClient `json:"http,omitempty" yaml:"http,omitempty"`
+	AWS            *aws.AwsClient                            `json:"aws,omitempty" yaml:"aws,omitempty"`
+	IdentityCenter *awsidentitycenter.IdentityCenterClient   `json:"awsIdentityCenter,omitempty" yaml:"awsIdentityCenter,omitempty"`
+	Doppler        *doppler.DopplerClient                    `json:"doppler,omitempty" yaml:"doppler,omitempty"`
+	GCP            *gcp.GcpClient                            `json:"gcp,omitempty" yaml:"gcp,omitempty"`
+	GitHub         *github.GitHubClient                      `json:"github,omitempty" yaml:"github,omitempty"`
+	Vault          *vault.VaultClient                        `json:"vault,omitempty" yaml:"vault,omitempty"`
+	HTTP           *httpstore.HTTPClient                     `json:"http,omitempty" yaml:"http,omitempty"`
 }
 
 type RegexpFilterConfig struct {
