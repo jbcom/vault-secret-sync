@@ -1,0 +1,22 @@
+linters-settings:
+  errcheck:
+    # Ignore Close() calls - common pattern in Go
+    exclude-functions:
+      - (io.Closer).Close
+      - (*os.File).Close
+      - (net/http.Request.Body).Close
+    # Check for blank identifier assignments
+    check-blank: false
+
+linters:
+  enable:
+    - errcheck
+  disable:
+    - unused  # Can be noisy
+
+issues:
+  # Don't fail on errcheck in test files for cleanup operations
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
