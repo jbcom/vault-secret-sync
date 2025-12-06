@@ -43,7 +43,7 @@ docker-compose up
 
 ```bash
 # Deploy with Helm
-helm upgrade --install vault-secret-sync deploy/helm/vault-secret-sync
+helm upgrade --install vault-secret-sync deploy/charts/vault-secret-sync
 ```
 
 ## Architecture
