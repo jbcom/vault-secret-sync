@@ -37,8 +37,13 @@ func shouldFilterVaultEvent(event event.AuditEvent) bool {
 		"action": "shouldFilterVaultEvent",
 	})
 	l.Trace("start")
+	// Check if event data is nil
+	if event.Event.Data == nil || event.Event.Data.Request == nil {
+		l.Trace("event data or request is nil")
+		return true
+	}
 	for _, ie := range ignoreEvents {
-		if event.Event.Request.Operation == logical.Operation(ie) {
+		if event.Event.Data.Request.Operation == logical.Operation(ie) {
 			l.Tracef("ignoring event: %s", ie)
 			return true
 		}
@@ -46,7 +51,7 @@ func shouldFilterVaultEvent(event event.AuditEvent) bool {
 	if len(monitoredEvents) > 0 {
 		var found bool
 		for _, me := range monitoredEvents {
-			if event.Event.Request.Operation == logical.Operation(me) {
+			if event.Event.Data.Request.Operation == logical.Operation(me) {
 				found = true
 				break
 			}
@@ -56,19 +61,19 @@ func shouldFilterVaultEvent(event event.AuditEvent) bool {
 			return true
 		}
 	}
-	if queue.Q.EventSeen(event.Event.Request.ID) {
+	if queue.Q.EventSeen(event.Event.Data.Request.ID) {
 		l.Trace("event already seen")
 		return true
 	}
-	queue.Q.SeenEvent(event.Event.Request.ID)
+	queue.Q.SeenEvent(event.Event.Data.Request.ID)
 	jd, jerr := json.Marshal(event)
 	if jerr != nil {
 		l.Error(jerr)
 		return true
 	}
 	l.Tracef("handling event: %s", string(jd))
-	l.Tracef("headers_received=%+v", event.Event.Request.Headers)
-	if h, ok := event.Event.Request.Headers["x-vault-sync"]; ok {
+	l.Tracef("headers_received=%+v", event.Event.Data.Request.Headers)
+	if h, ok := event.Event.Data.Request.Headers["x-vault-sync"]; ok {
 		l.Debugf("x-vault-sync header found: %s", h)
 		for _, v := range h {
 			l.Debugf("x-vault-sync header value: %s", v)
@@ -95,16 +100,16 @@ func processVaultEvent(ctx context.Context, event event.AuditEvent) error {
 	}
 	l = l.WithFields(log.Fields{
 		"tenant":  event.VaultTenant,
-		"eventId": event.Event.Request.ID,
-		"op":      event.Event.Request.Operation,
-		"path":    event.Event.Request.Path,
+		"eventId": event.Event.Data.Request.ID,
+		"op":      event.Event.Data.Request.Operation,
+		"path":    event.Event.Data.Request.Path,
 	})
 	l.WithFields(log.Fields{
-		"data":  event.Event.Request.Data,
+		"data":  event.Event.Data.Request.Data,
 		"event": event.Event,
 	}).Trace("handle event")
 	if config.Config.Log.Events {
-		l.Infof("event: %s", event.Event.Request.Operation)
+		l.Infof("event: %s", event.Event.Data.Request.Operation)
 	}
 	evt := sync.NewVaultEventFromAuditEvent(event)
 	err := sync.ScheduleSync(ctx, evt)
@@ -188,7 +193,7 @@ func handleVaultEvents(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	dec := json.NewDecoder(r.Body)
 	for {
-		var ev audit.ResponseEntry
+		var ev audit.Event
 		if err := dec.Decode(&ev); err == io.EOF {
 			l.Trace("EOF")
 			w.WriteHeader(http.StatusAccepted)
@@ -200,7 +205,7 @@ func handleVaultEvents(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			break
 		}
-		if ev == (audit.ResponseEntry{}) {
+		if ev.Data == nil || ev.Data.Request == nil {
 			l.Trace("empty or invalid event")
 			continue
 		}
@@ -212,7 +217,11 @@ func handleVaultEvents(w http.ResponseWriter, r *http.Request) {
 		}
 		// using a background context to ensure the event is processed even if the request is cancelled
 		ctx := context.Background()
-		go processVaultEvent(ctx, ve)
+		go func(ctx context.Context, ve event.AuditEvent) {
+			if err := processVaultEvent(ctx, ve); err != nil {
+				log.WithError(err).WithField("eventId", ve.Event.Data.Request.ID).Error("failed to process vault event")
+			}
+		}(ctx, ve)
 	}
 	l.Trace("end")
 }

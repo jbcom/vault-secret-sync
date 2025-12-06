@@ -22,7 +22,7 @@ func TestHandleNotificationTemplate(t *testing.T) {
 			"test-key.yaml": `
 - type: slack
   slack:
-    url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+    url: "https://hooks.slack.com/services/YOUR_WORKSPACE/YOUR_CHANNEL/YOUR_TOKEN"
     events:
       - "success"
       - "failure"
@@ -47,7 +47,7 @@ func TestHandleNotificationTemplate(t *testing.T) {
 	assert.NotNil(t, message.VaultSecretSync.Spec.Notifications)
 	assert.Len(t, message.VaultSecretSync.Spec.Notifications, 1)
 	assert.NotNil(t, message.VaultSecretSync.Spec.Notifications[0].Slack)
-	assert.Equal(t, "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", *message.VaultSecretSync.Spec.Notifications[0].Slack.URL)
+	assert.Equal(t, "https://hooks.slack.com/services/YOUR_WORKSPACE/YOUR_CHANNEL/YOUR_TOKEN", *message.VaultSecretSync.Spec.Notifications[0].Slack.URL)
 
 	expectedEvents := []string{"success", "failure"}
 	actualEvents := make([]string, len(message.VaultSecretSync.Spec.Notifications[0].Slack.Events))

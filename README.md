@@ -1,14 +1,47 @@
 # HashiCorp Vault Secret Sync
 
-vault-secret-sync provides fully automated real-time secret syncronization from HashiCorp Vault to other remote secret stores. This enables you to take advantage of natively integrated cloud secret stores while maintaining an authoratative single source of truth in Vault. Both Open Source and Enterprise versions of Vault are supported.
+> **Maintained by jbcom** | [Original by robertlestak](https://github.com/robertlestak/vault-secret-sync)
 
-Currently, the following secret stores are supported:
+vault-secret-sync provides fully automated real-time secret synchronization from HashiCorp Vault to other remote secret stores. This enables you to take advantage of natively integrated cloud secret stores while maintaining an authoritative single source of truth in Vault. Both Open Source and Enterprise versions of Vault are supported.
+
+## Supported Secret Stores
 
 - Vault (kv2)
 - AWS Secrets Manager
+- AWS Identity Center (account discovery) ✨
 - GCP Secret Manager
-- GitHub Repository
-- GitHub Organization
+- GitHub Repository / Organization
+- Doppler ✨
+
+✨ = jbcom enhancement
+
+## jbcom Ownership & Enhancements
+
+**Current Maintainer**: jbcom  
+**Repository**: Part of [jbcom-control-center](https://github.com/jbcom/jbcom-control-center) monorepo  
+**Package Path**: `packages/vault-secret-sync`  
+**Docker Image**: `docker.io/jbcom/vault-secret-sync`  
+**Helm Chart**: `oci://docker.io/jbcom/vault-secret-sync`
+
+### What We Added
+
+| Feature | Description |
+|---------|-------------|
+| **Doppler Store** | Sync secrets to Doppler projects/configs |
+| **AWS Identity Center** | Dynamic account discovery via SSO group membership |
+| **Full CI/CD** | Automated testing, multi-arch Docker builds, Helm OCI publishing |
+| **SBOM & Provenance** | Supply chain security attestations on all images |
+| **Code Quality** | Dead code removal, proper error handling, context propagation |
+
+### Why We Forked
+
+We needed tight integration with our infrastructure:
+- Custom cloud provider support (Doppler, AWS Identity Center)
+- Monorepo integration with unified CI/CD
+- Code quality improvements for production reliability
+- Clear ownership and maintenance guarantees
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed changes and upstream contribution plans.
 
 ## High Level Architecture
 
@@ -91,6 +124,20 @@ spec:
       labels:
         key: "value"
         another: "label"
+  - doppler:
+      project: "my-project"
+      config: "production"
+      token: "dp.st.xxx"  # Or use tokenSecret for K8s secret reference
+  - awsIdentityCenter:
+      # Discover AWS accounts based on Identity Center group membership
+      region: "us-east-1"
+      groupName: "Developers"
+      accountMapping:
+        "*@example.com":
+          accountId: "123456789012"
+          accountName: "sandbox"
+          executionRoleArn: "arn:aws:iam::123456789012:role/SecretsSync"
+          classification: "sandbox"
   - http:
       url: "https://example.com/my/app"
       method: "POST"
@@ -118,7 +165,7 @@ spec:
         Destination: {{ .VaultSecretSync.Spec.Dest | json }}
   - slack:
       events: ["failure"]  
-      url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+      url: "https://hooks.slack.com/services/YOUR_WORKSPACE/YOUR_CHANNEL/YOUR_TOKEN"
       body: |
         The sync operation has failed.
         Details:
@@ -161,7 +208,7 @@ Filters can be applied to the sync to include or exclude secrets based on either
       - "foo/bar/hello-[0-9]+"
       exclude:
       - "foo/bar/no[^abc]+"
-    paths:
+    path:
       include:
       - "foo/bar/hello"
       exclude:
@@ -329,7 +376,7 @@ Notifications can be configured to send a message to a configured receiver when 
         Destination: {{ .VaultSecretSync.Spec.Dest | json }}
   - slack:
       events: ["failure"]  
-      url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+      url: "https://hooks.slack.com/services/YOUR_WORKSPACE/YOUR_CHANNEL/YOUR_TOKEN"
       urlSecret: "default/slack-url-secret" # optional, default empty. Set to the path of the secret containing the slack webhook URL
       urlSecretKey: "url" # optional, default "url". Set to the key of the secret containing the slack webhook URL when using urlSecret
       body: |
@@ -424,7 +471,7 @@ Similar to `CronJob` resources, you can suspend the sync operation by setting th
 
 ```yaml
 spec:
-  syncDelete: false
+  suspend: true
 ```
 
-This will prevent the operator from deleting secrets in the destination secret store when they are deleted in the source. Note that with this flag set, there may be a divergence between the source and destination secret stores if secrets are deleted in the source but that is not reflected in the destination. However this may be necessary if you have a many-to-one configuration where multiple source paths are synced to a single destination path, and you do not want to delete the entire destination path when a single source path is deleted/recreated.
+This will pause all sync operations for this resource until the flag is set back to `false`.

@@ -1,62 +1,62 @@
-# First stage: build the Go application
-FROM golang:1.23.4 AS builder
+# syntax=docker/dockerfile:1.7
 
-# Install dependencies
-RUN apt-get update -y && apt-get install -y curl build-essential unzip gcc make pkg-config
+###
+# Build a static vault-secret-sync binary for the requested platform.
+# Tests now run in CI (outside Docker), so this Dockerfile focuses purely
+# on compiling and packaging the runtime image.
+###
+FROM golang:1.24-bookworm AS builder
 
-ENV LIBSODIUM_VERSION 1.0.18
-RUN \
-    mkdir -p /tmpbuild/libsodium && \
-    cd /tmpbuild/libsodium && \
-    curl -L https://download.libsodium.org/libsodium/releases/libsodium-${LIBSODIUM_VERSION}.tar.gz -o libsodium-${LIBSODIUM_VERSION}.tar.gz && \
-    tar xfvz libsodium-${LIBSODIUM_VERSION}.tar.gz && \
-    cd /tmpbuild/libsodium/libsodium-${LIBSODIUM_VERSION}/ && \
-    ./configure && \
-    make && make check && \
-    make install && \
-    mv src/libsodium /usr/local/ && \
-    rm -Rf /tmpbuild/ && \
-    ldconfig
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG TARGETVARIANT
+ARG CGO_ENABLED=0
 
-# Set the Current Working Directory inside the container
+ARG VERSION=dev
+
+ENV CGO_ENABLED=${CGO_ENABLED} \
+    GOTOOLCHAIN=auto
 WORKDIR /src
 
-# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download && go mod verify
+# Cache module and build downloads between runs
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
-# Copy the source code into the container
 COPY . .
 
-# Run tests
-RUN go test ./...
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH} \
+    GOARM=${TARGETVARIANT#v} \
+    go build -trimpath \
+      -ldflags="-s -w" \
+      -o /out/vss ./cmd/vss
 
-# Build the Go application
-RUN go build -o /bin/vss cmd/vss/*.go
+###
+# Runtime image: tiny BusyBox container that only carries the binary and certs.
+###
+FROM busybox:1.36.1-musl AS runtime
 
-FROM ubuntu:22.04 as vss
+ARG VERSION=dev
+ARG VSS_CONFIG=/etc/vss/config.yaml
 
-WORKDIR /src
+ENV VSS_CONFIG=${VSS_CONFIG} \
+    VSS_VERSION=${VERSION}
 
-RUN apt-get update -y && apt-get install -y curl build-essential unzip gcc make pkg-config
+LABEL org.opencontainers.image.title="vault-secret-sync" \
+      org.opencontainers.image.source="https://github.com/jbcom/jbcom-oss-ecosystem" \
+      org.opencontainers.image.version=${VERSION}
 
-ENV LIBSODIUM_VERSION 1.0.18
-RUN \
-    mkdir -p /tmpbuild/libsodium && \
-    cd /tmpbuild/libsodium && \
-    curl -L https://download.libsodium.org/libsodium/releases/libsodium-${LIBSODIUM_VERSION}.tar.gz -o libsodium-${LIBSODIUM_VERSION}.tar.gz && \
-    tar xfvz libsodium-${LIBSODIUM_VERSION}.tar.gz && \
-    cd /tmpbuild/libsodium/libsodium-${LIBSODIUM_VERSION}/ && \
-    ./configure && \
-    make && make check && \
-    make install && \
-    mv src/libsodium /usr/local/ && \
-    rm -Rf /tmpbuild/ && \
-    ldconfig
+WORKDIR /app
 
-COPY --from=builder /bin/vss /bin/vss
+RUN mkdir -p /etc/ssl/certs
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /out/vss /usr/local/bin/vss
 
-# Command to run the executable
-ENTRYPOINT [ "/bin/vss" ]
+USER 65532:65532
+
+ENTRYPOINT ["/usr/local/bin/vss"]
