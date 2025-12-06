@@ -32,7 +32,7 @@ golangci-lint run
 docker build -t vault-secret-sync .
 
 # Deploy with Helm
-helm upgrade --install vault-secret-sync deploy/helm/vault-secret-sync
+helm upgrade --install vault-secret-sync deploy/charts/vault-secret-sync
 ```
 
 ---
