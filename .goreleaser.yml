@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: vault-secret-sync
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: vss
+    main: ./cmd/vss
+    binary: vss
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: "🚀 Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "⚡ Performance"
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "♻️ Refactoring"
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: "📦 Dependencies"
+      regexp: '^.*?(deps|build)(\([[:word:]]+\))??!?:.+$'
+      order: 4
+    - title: "🔒 Security"
+      regexp: '^.*?security(\([[:word:]]+\))??!?:.+$'
+      order: 5
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: jbcom
+    name: vault-secret-sync
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## vault-secret-sync {{ .Tag }}
+
+    ### Installation
+
+    **Docker:**
+    ```bash
+    docker pull jbcom/vault-secret-sync:{{ .Version }}
+    ```
+
+    **Helm (OCI):**
+    ```bash
+    helm install vault-secret-sync oci://registry-1.docker.io/jbcom/vault-secret-sync --version {{ .Version }}
+    ```
+
+    **Binary:**
+    Download from the assets below for your platform.
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/jbcom/vault-secret-sync/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+  extra_files:
+    - glob: ./deploy/charts/vault-secret-sync-*.tgz
+
+# Docker images are built separately via docker/build-push-action
+# for better multi-arch support with buildx
+dockers: []
