@@ -123,8 +123,8 @@ func handleSlack(ctx context.Context, message v1alpha1.NotificationMessage) erro
 		"pkg":              "notifications",
 		"action":           "notifications.handleSlack",
 		"notificationType": "slack",
-		"syncConfig":       message.VaultSecretSync.ObjectMeta.Name,
-		"syncNamespace":    message.VaultSecretSync.ObjectMeta.Namespace,
+		"syncConfig":       message.VaultSecretSync.Name,
+		"syncNamespace":    message.VaultSecretSync.Namespace,
 	})
 	l.Trace("start")
 	defer l.Trace("end")

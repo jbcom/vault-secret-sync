@@ -127,8 +127,8 @@ func handleWebhooks(ctx context.Context, message v1alpha1.NotificationMessage) e
 		"pkg":              "notifications",
 		"action":           "notifications.handleWebhooks",
 		"notificationType": "webhooks",
-		"syncConfig":       message.VaultSecretSync.ObjectMeta.Name,
-		"syncNamespace":    message.VaultSecretSync.ObjectMeta.Namespace,
+		"syncConfig":       message.VaultSecretSync.Name,
+		"syncNamespace":    message.VaultSecretSync.Namespace,
 	})
 	l.Trace("start")
 	defer l.Trace("end")
