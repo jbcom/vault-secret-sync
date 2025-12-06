@@ -23,9 +23,6 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
 
 archives:
   - id: default
@@ -40,12 +37,11 @@ archives:
       {{- .Version }}_
       {{- .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
     files:
-      - LICENSE
-      - README.md
-      - CHANGELOG.md
+      - LICENSE*
+      - README*
+      - CHANGELOG*
 
 checksum:
   name_template: "checksums.txt"
@@ -67,22 +63,22 @@ changelog:
       - Merge branch
   groups:
     - title: "🚀 Features"
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?feat(\([[:word:]]+\))?!?:.+$'
       order: 0
     - title: "🐛 Bug Fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?fix(\([[:word:]]+\))?!?:.+$'
       order: 1
     - title: "⚡ Performance"
-      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?perf(\([[:word:]]+\))?!?:.+$'
       order: 2
     - title: "♻️ Refactoring"
-      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?refactor(\([[:word:]]+\))?!?:.+$'
       order: 3
     - title: "📦 Dependencies"
-      regexp: '^.*?(deps|build)(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?(deps|build)(\([[:word:]]+\))?!?:.+$'
       order: 4
     - title: "🔒 Security"
-      regexp: '^.*?security(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?security(\([[:word:]]+\))?!?:.+$'
       order: 5
     - title: Others
       order: 999
@@ -116,9 +112,6 @@ release:
     ---
     **Full Changelog**: https://github.com/jbcom/vault-secret-sync/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-  extra_files:
-    - glob: ./deploy/charts/vault-secret-sync-*.tgz
-
-# Docker images are built separately via docker/build-push-action
-# for better multi-arch support with buildx
+# Docker images and Helm charts are built/pushed separately
+# via dedicated workflow jobs for better control
 dockers: []
