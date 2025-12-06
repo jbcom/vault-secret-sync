@@ -1,20 +1,10 @@
 version: "2"
 
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - (io.Closer).Close
-      - (*os.File).Close
-      - (net/http.Request.Body).Close
-    check-blank: false
-
 linters:
   default: standard
   disable:
-    - errcheck  # Too noisy for this codebase
+    - errcheck  # Too many false positives for Close() calls
 
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
+  exclude-dirs:
+    - vendor
