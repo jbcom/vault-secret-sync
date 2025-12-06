@@ -2,5 +2,4 @@ version: "2"
 
 linters:
   disable:
-    - errcheck
-    - staticcheck  # Too many style suggestions for this codebase
+    - errcheck  # Many Close() calls without error checking

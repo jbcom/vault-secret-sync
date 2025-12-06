@@ -16,7 +16,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
 	vaultv1alpha1 "github.com/robertlestak/vault-secret-sync/api/v1alpha1"
 	zzap "go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +64,7 @@ func (b *KubernetesBackend) Type() BackendType {
 	return BackendTypeKubernetes
 }
 
-func SetSyncStatus(ctx context.Context, sc v1alpha1.VaultSecretSync, status SyncStatusString) error {
+func SetSyncStatus(ctx context.Context, sc vaultv1alpha1.VaultSecretSync, status SyncStatusString) error {
 	if B == nil {
 		return nil
 	}
@@ -91,7 +90,7 @@ func WriteEvent(ctx context.Context, namespace string, name string, Event string
 }
 
 // AnnotationOperations handles annotations on VaultSecretSync objects
-func AnnotationOperations(ctx context.Context, r *VaultSecretSyncReconciler, vaultSecretSync *v1alpha1.VaultSecretSync) error {
+func AnnotationOperations(ctx context.Context, r *VaultSecretSyncReconciler, vaultSecretSync *vaultv1alpha1.VaultSecretSync) error {
 	l := log.WithFields(log.Fields{
 		"action": "annotationOperations",
 	})
@@ -99,14 +98,14 @@ func AnnotationOperations(ctx context.Context, r *VaultSecretSyncReconciler, vau
 	defer l.Trace("end")
 
 	// If it has a "force-sync" annotation, trigger a manual sync and then remove the annotation so it doesn't trigger again
-	if vaultSecretSync.ObjectMeta.Annotations["force-sync"] != "" {
+	if vaultSecretSync.Annotations["force-sync"] != "" {
 		l.Debug("sync annotation found, triggering force-sync sync")
 
 		// Look for an operation annotation, if we don't find one, default to update
 		var op logical.Operation
-		if vaultSecretSync.ObjectMeta.Annotations["op"] != "" {
-			l.Debugf("operation annotation found: %s", vaultSecretSync.ObjectMeta.Annotations["op"])
-			op = logical.Operation(vaultSecretSync.ObjectMeta.Annotations["op"])
+		if vaultSecretSync.Annotations["op"] != "" {
+			l.Debugf("operation annotation found: %s", vaultSecretSync.Annotations["op"])
+			op = logical.Operation(vaultSecretSync.Annotations["op"])
 		} else {
 			op = logical.UpdateOperation
 		}
@@ -118,8 +117,8 @@ func AnnotationOperations(ctx context.Context, r *VaultSecretSyncReconciler, vau
 		l.Debug("force-sync sync triggered")
 
 		// Delete the annotations after triggering sync
-		delete(vaultSecretSync.ObjectMeta.Annotations, "force-sync")
-		delete(vaultSecretSync.ObjectMeta.Annotations, "op")
+		delete(vaultSecretSync.Annotations, "force-sync")
+		delete(vaultSecretSync.Annotations, "op")
 
 		// Update the VaultSecretSync object
 		if err := r.Update(ctx, vaultSecretSync, client.FieldOwner("vault-secret-sync-controller")); err != nil {
@@ -151,7 +150,7 @@ func createHash(s vaultv1alpha1.VaultSecretSync) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func setSyncStatusKube(ctx context.Context, sc v1alpha1.VaultSecretSync, status SyncStatusString) error {
+func setSyncStatusKube(ctx context.Context, sc vaultv1alpha1.VaultSecretSync, status SyncStatusString) error {
 	l := log.WithFields(log.Fields{
 		"action":    "setSyncStatusKube",
 		"status":    status,
@@ -223,12 +222,12 @@ func (r *VaultSecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	l.Trace("retrieved VaultSecretSync")
 
 	// Check if the object is being deleted
-	if !vaultSecretSync.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !vaultSecretSync.DeletionTimestamp.IsZero() {
 		// The object is being deleted
 		if err := RemoveSyncConfig(InternalName(vaultSecretSync.Namespace, vaultSecretSync.Name)); err != nil {
 			l.Errorf("failed to remove sync config: %v", err)
 		}
-		if vaultSecretSync.ObjectMeta.Annotations["delete-on-removal"] == "true" {
+		if vaultSecretSync.Annotations["delete-on-removal"] == "true" {
 			if err := ManualTrigger(ctx, *vaultSecretSync, logical.DeleteOperation); err != nil {
 				r.Recorder.Event(vaultSecretSync, "Warning", "Deleting", "Failed to delete secret")
 			}

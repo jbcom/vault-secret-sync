@@ -66,7 +66,7 @@ func initQueue() error {
 		isOperatorEnabled := config.Config.Operator != nil && config.Config.Operator.Enabled != nil && *config.Config.Operator.Enabled
 		isEventsEnabled := config.Config.Events != nil && config.Config.Events.Enabled != nil && *config.Config.Events.Enabled
 		// if either is enabled, but not both, it's not a valid single-binary mode for memory queue
-		if (isOperatorEnabled || isEventsEnabled) && !(isOperatorEnabled && isEventsEnabled) {
+		if isOperatorEnabled != isEventsEnabled {
 			return errors.New("memory queue can only be used in single-binary mode (both operator and events must be enabled)")
 		}
 	}

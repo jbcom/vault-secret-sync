@@ -43,14 +43,14 @@ func handleManualRegexSync(ctx context.Context, sc *SyncClients, j SyncJob) erro
 	// Check if sc or sc.Source is nil
 	if sc == nil || sc.Source == nil {
 		l.Error("SyncClients or Source is nil")
-		return fmt.Errorf("SyncClients or Source is nil")
+		return fmt.Errorf("syncClients or source is nil")
 	}
 
 	// Check if sc.Source.GetPath() returns nil
 	sourcePath := sc.Source.GetPath()
 	if sourcePath == "" {
 		l.Error("Source path is empty")
-		return fmt.Errorf("Source path is empty")
+		return fmt.Errorf("source path is empty")
 	}
 
 	highestNonRegexPath := findHighestNonRegexPath(sourcePath)
@@ -63,7 +63,7 @@ func handleManualRegexSync(ctx context.Context, sc *SyncClients, j SyncJob) erro
 	// Check if list is nil
 	if list == nil {
 		l.Error("List returned by LoopWildcardRecursive is nil")
-		return fmt.Errorf("List returned by LoopWildcardRecursive is nil")
+		return fmt.Errorf("list returned by LoopWildcardRecursive is nil")
 	}
 
 	l.WithFields(log.Fields{"list": list}).Debug("found list")
