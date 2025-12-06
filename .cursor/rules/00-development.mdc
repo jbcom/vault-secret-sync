@@ -1,0 +1,24 @@
+# vault-secret-sync Development
+
+## Package Overview
+
+Kubernetes operator for syncing secrets from Vault to external stores.
+
+## Commands
+
+```bash
+go mod download     # Download deps
+go build ./...      # Build
+go test ./...       # Test
+golangci-lint run   # Lint
+```
+
+## Store Implementations
+
+Add new stores in `stores/` directory. Each store implements the Store interface.
+
+## Key Patterns
+
+- Use Go 1.23+
+- Follow standard Go project layout
+- Use conventional commits
