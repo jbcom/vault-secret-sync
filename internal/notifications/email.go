@@ -149,8 +149,8 @@ func handleEmail(ctx context.Context, message v1alpha1.NotificationMessage) erro
 		"pkg":              "notifications",
 		"action":           "notifications.handleEmail",
 		"notificationType": "email",
-		"syncConfig":       message.VaultSecretSync.ObjectMeta.Name,
-		"syncNamespace":    message.VaultSecretSync.ObjectMeta.Namespace,
+		"syncConfig":       message.VaultSecretSync.Name,
+		"syncNamespace":    message.VaultSecretSync.Namespace,
 	})
 	l.Trace("start")
 	defer l.Trace("end")

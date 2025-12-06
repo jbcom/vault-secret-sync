@@ -18,8 +18,8 @@ func handleNotificationTemplate(ctx context.Context, kc kubernetes.Interface, me
 	l := log.WithFields(log.Fields{
 		"pkg":           "notifications",
 		"action":        "handleNotificationTemplate",
-		"syncConfig":    message.VaultSecretSync.ObjectMeta.Name,
-		"syncNamespace": message.VaultSecretSync.ObjectMeta.Namespace,
+		"syncConfig":    message.VaultSecretSync.Name,
+		"syncNamespace": message.VaultSecretSync.Namespace,
 	})
 	l.Trace("start")
 	defer l.Trace("end")
@@ -36,7 +36,7 @@ func handleNotificationTemplate(ctx context.Context, kc kubernetes.Interface, me
 
 	var namespace, configMapName, key string
 	if len(parts) == 2 {
-		namespace = message.VaultSecretSync.ObjectMeta.Namespace
+		namespace = message.VaultSecretSync.Namespace
 		configMapName = parts[0]
 		key = parts[1]
 	} else {
@@ -69,8 +69,8 @@ func Trigger(ctx context.Context, message v1alpha1.NotificationMessage) error {
 	l := log.WithFields(log.Fields{
 		"pkg":           "notifications",
 		"action":        "notifications.Trigger",
-		"syncConfig":    message.VaultSecretSync.ObjectMeta.Name,
-		"syncNamespace": message.VaultSecretSync.ObjectMeta.Namespace,
+		"syncConfig":    message.VaultSecretSync.Name,
+		"syncNamespace": message.VaultSecretSync.Namespace,
 		"notifications": len(message.VaultSecretSync.Spec.Notifications),
 	})
 	l.Trace("start")
