@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -308,10 +309,18 @@ func (c *Config) expandEnvVars() {
 	// Use stricter regex to only allow valid environment variable names
 	envPattern := regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
+	// Maximum length for expanded values to prevent potential attacks
+	const maxEnvValueLength = 10000
+
 	expand := func(s string) string {
 		return envPattern.ReplaceAllStringFunc(s, func(match string) string {
 			varName := match[2 : len(match)-1] // Strip ${ and }
 			if val := os.Getenv(varName); val != "" {
+				// Security: reject suspiciously long values
+				if len(val) > maxEnvValueLength {
+					log.WithField("variable", varName).Warn("Environment variable value exceeds maximum length, keeping placeholder")
+					return match
+				}
 				return val
 			}
 			return match // Keep original if not found
@@ -355,6 +364,10 @@ func (c *Config) Validate() error {
 		if target.AccountID == "" {
 			return fmt.Errorf("target %q: account_id is required", name)
 		}
+		// Validate AWS account ID format (must be 12 digits)
+		if !isValidAWSAccountID(target.AccountID) {
+			return fmt.Errorf("target %q: invalid account_id format %q (must be 12 digits)", name, target.AccountID)
+		}
 		// Validate imports reference valid sources or other targets
 		for _, imp := range target.Imports {
 			if _, ok := c.Sources[imp]; !ok {
@@ -373,6 +386,19 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// isValidAWSAccountID validates that an AWS account ID is exactly 12 digits
+func isValidAWSAccountID(accountID string) bool {
+	if len(accountID) != 12 {
+		return false
+	}
+	for _, c := range accountID {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // GetRoleARN returns the role ARN for a target account

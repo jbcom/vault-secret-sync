@@ -390,8 +390,8 @@ func TestIsInheritedTarget(t *testing.T) {
 			"analytics": {Vault: &VaultSource{Mount: "analytics"}},
 		},
 		Targets: map[string]Target{
-			"Stg":  {AccountID: "111", Imports: []string{"analytics"}},
-			"Prod": {AccountID: "222", Imports: []string{"Stg"}},
+			"Stg":  {AccountID: "111111111111", Imports: []string{"analytics"}},
+			"Prod": {AccountID: "222222222222", Imports: []string{"Stg"}},
 		},
 	}
 
@@ -406,8 +406,8 @@ func TestGetSourcePath(t *testing.T) {
 		},
 		MergeStore: MergeStoreConfig{Vault: &MergeStoreVault{Mount: "merged-secrets"}},
 		Targets: map[string]Target{
-			"Stg":  {AccountID: "111", Imports: []string{"analytics"}},
-			"Prod": {AccountID: "222", Imports: []string{"Stg"}},
+			"Stg":  {AccountID: "111111111111", Imports: []string{"analytics"}},
+			"Prod": {AccountID: "222222222222", Imports: []string{"Stg"}},
 		},
 	}
 
@@ -416,4 +416,46 @@ func TestGetSourcePath(t *testing.T) {
 	
 	// Inherited target
 	assert.Equal(t, "merged-secrets/Stg", cfg.GetSourcePath("Stg"))
+}
+
+func TestIsValidAWSAccountID(t *testing.T) {
+	tests := []struct {
+		name      string
+		accountID string
+		valid     bool
+	}{
+		{"valid 12 digits", "123456789012", true},
+		{"valid all zeros", "000000000000", true},
+		{"too short", "12345678901", false},
+		{"too long", "1234567890123", false},
+		{"contains letters", "12345678901a", false},
+		{"contains special chars", "123456789-12", false},
+		{"empty", "", false},
+		{"spaces", "123456789 12", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidAWSAccountID(tt.accountID)
+			assert.Equal(t, tt.valid, result)
+		})
+	}
+}
+
+func TestConfigValidateAccountIDFormat(t *testing.T) {
+	// Test that invalid account IDs are rejected
+	cfg := Config{
+		Vault: VaultConfig{Address: "https://vault.example.com"},
+		Sources: map[string]Source{
+			"analytics": {Vault: &VaultSource{Mount: "analytics"}},
+		},
+		MergeStore: MergeStoreConfig{Vault: &MergeStoreVault{Mount: "merged"}},
+		Targets: map[string]Target{
+			"Stg": {AccountID: "invalid", Imports: []string{"analytics"}},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid account_id format")
 }

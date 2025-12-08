@@ -63,6 +63,21 @@ type OrganizationInfo struct {
 	DelegatedServices   []string
 }
 
+// redactARN extracts the type of identity from an ARN for safe logging
+// without exposing sensitive role/user names
+func redactARN(arn string) string {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 6 {
+		return "unknown"
+	}
+	// Extract resource type (role, user, assumed-role, etc.)
+	resource := parts[5]
+	if idx := strings.Index(resource, "/"); idx > 0 {
+		return resource[:idx] // Return just "role", "user", "assumed-role"
+	}
+	return resource
+}
+
 // NewAWSExecutionContext creates and initializes an AWS execution context
 func NewAWSExecutionContext(ctx context.Context, cfg *AWSConfig) (*AWSExecutionContext, error) {
 	l := log.WithFields(log.Fields{
@@ -87,8 +102,8 @@ func NewAWSExecutionContext(ctx context.Context, cfg *AWSConfig) (*AWSExecutionC
 	}
 
 	l.WithFields(log.Fields{
-		"accountID": ec.CallerIdentity.AccountID,
-		"arn":       ec.CallerIdentity.ARN,
+		"accountID":    ec.CallerIdentity.AccountID,
+		"identityType": redactARN(ec.CallerIdentity.ARN),
 	}).Info("AWS caller identity discovered")
 
 	// Discover organization context

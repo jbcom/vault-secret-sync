@@ -203,6 +203,7 @@ type ResultDetails struct {
 	SourcePaths      []string `json:"source_paths,omitempty"`
 	DestinationPath  string   `json:"destination_path,omitempty"`
 	RoleARN          string   `json:"role_arn,omitempty"`
+	FailedImports    []string `json:"failed_imports,omitempty"`
 }
 
 // Run executes the pipeline with the given options
@@ -221,8 +222,10 @@ func (p *Pipeline) Run(ctx context.Context, opts Options) ([]Result, error) {
 		return nil, fmt.Errorf("failed to initialize pipeline: %w", err)
 	}
 
-	// Reset results
+	// Reset results (protected by mutex for concurrent safety)
+	p.resultsMu.Lock()
 	p.results = nil
+	p.resultsMu.Unlock()
 
 	// Resolve targets
 	targets := p.resolveTargets(opts.Targets)
@@ -285,6 +288,7 @@ func (p *Pipeline) initialize(ctx context.Context) error {
 	}()
 
 	// Allow processor to start
+	// TODO: Replace with proper synchronization - EventProcessor should signal readiness via channel
 	time.Sleep(100 * time.Millisecond)
 
 	p.initialized = true
@@ -323,7 +327,9 @@ func (p *Pipeline) runMerge(ctx context.Context, targets []string, opts Options)
 	l.Info("Starting merge phase")
 
 	results, err := p.executeMergePhase(ctx, targets, opts)
+	p.resultsMu.Lock()
 	p.results = results
+	p.resultsMu.Unlock()
 	return results, err
 }
 
@@ -336,7 +342,9 @@ func (p *Pipeline) runSync(ctx context.Context, targets []string, opts Options) 
 	l.Info("Starting sync phase")
 
 	results, err := p.executeSyncPhase(ctx, targets, opts)
+	p.resultsMu.Lock()
 	p.results = results
+	p.resultsMu.Unlock()
 	return results, err
 }
 
@@ -356,7 +364,9 @@ func (p *Pipeline) runPipeline(ctx context.Context, targets []string, opts Optio
 	allResults = append(allResults, mergeResults...)
 
 	if mergeErr != nil && !opts.ContinueOnError {
+		p.resultsMu.Lock()
 		p.results = allResults
+		p.resultsMu.Unlock()
 		return allResults, fmt.Errorf("merge phase failed: %w", mergeErr)
 	}
 
@@ -365,7 +375,9 @@ func (p *Pipeline) runPipeline(ctx context.Context, targets []string, opts Optio
 	syncResults, syncErr := p.executeSyncPhase(ctx, targets, opts)
 	allResults = append(allResults, syncResults...)
 
+	p.resultsMu.Lock()
 	p.results = allResults
+	p.resultsMu.Unlock()
 
 	if syncErr != nil {
 		return allResults, fmt.Errorf("sync phase failed: %w", syncErr)
@@ -515,6 +527,7 @@ func (p *Pipeline) mergeTarget(ctx context.Context, targetName string, dryRun bo
 	l.WithField("mergePath", mergePath).Info("Starting merge")
 
 	var sourcePaths []string
+	var failedImports []string
 	var lastErr error
 	successCount := 0
 
@@ -532,13 +545,15 @@ func (p *Pipeline) mergeTarget(ctx context.Context, targetName string, dryRun bo
 			syncConfig := p.createMergeSync(importName, targetName, sourcePath, mergePath, dryRun)
 
 			if err := backend.AddSyncConfig(syncConfig); err != nil {
-				l.WithError(err).Error("Failed to add sync config")
+				l.WithError(err).WithField("import", importName).Error("Failed to add sync config")
+				failedImports = append(failedImports, importName)
 				lastErr = err
 				continue
 			}
 
 			if err := backend.ManualTrigger(ctx, syncConfig, logical.UpdateOperation); err != nil {
-				l.WithError(err).Error("Failed to trigger merge")
+				l.WithError(err).WithField("import", importName).Error("Failed to trigger merge")
+				failedImports = append(failedImports, importName)
 				lastErr = err
 				continue
 			}
@@ -555,7 +570,8 @@ func (p *Pipeline) mergeTarget(ctx context.Context, targetName string, dryRun bo
 				"_timestamp": time.Now().UTC().Format(time.RFC3339),
 			}
 			if err := p.s3Store.WriteSecret(ctx, targetName, importName, secretData); err != nil {
-				l.WithError(err).Error("Failed to write to S3 merge store")
+				l.WithError(err).WithField("import", importName).Error("Failed to write to S3 merge store")
+				failedImports = append(failedImports, importName)
 				lastErr = err
 				continue
 			}
@@ -565,14 +581,16 @@ func (p *Pipeline) mergeTarget(ctx context.Context, targetName string, dryRun bo
 	}
 
 	// Allow time for async processing (only for Vault merge store)
+	// TODO: Replace with proper synchronization mechanism (channels/WaitGroups)
 	if p.config.MergeStore.Vault != nil {
 		time.Sleep(time.Duration(len(target.Imports)*300) * time.Millisecond)
 	}
 
 	success := lastErr == nil
 	l.WithFields(log.Fields{
-		"duration": time.Since(start),
-		"success":  success,
+		"duration":      time.Since(start),
+		"success":       success,
+		"failedImports": failedImports,
 	}).Info("Merge completed")
 
 	return Result{
@@ -586,6 +604,7 @@ func (p *Pipeline) mergeTarget(ctx context.Context, targetName string, dryRun bo
 			SecretsProcessed: successCount,
 			SourcePaths:      sourcePaths,
 			DestinationPath:  mergePath,
+			FailedImports:    failedImports,
 		},
 	}
 }
@@ -664,6 +683,7 @@ func (p *Pipeline) syncTarget(ctx context.Context, targetName string, dryRun boo
 	}
 
 	// Allow time for async processing
+	// TODO: Replace with proper synchronization - ManualTrigger should return completion signal
 	time.Sleep(500 * time.Millisecond)
 
 	l.WithField("duration", time.Since(start)).Info("Sync completed")
