@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-redis/redis"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
+	"github.com/jbcom/secretsync/internal/event"
 )
 
 type TLSConfig struct {

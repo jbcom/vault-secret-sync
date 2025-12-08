@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "vault-secret-sync-operator.fullname" . }}
+  name: {{ include "secretsync-operator.fullname" . }}
   labels:
-    {{- include "vault-secret-sync-operator.labels" . | nindent 4 }}
+    {{- include "secretsync-operator.labels" . | nindent 4 }}
     {{- with .Values.deploymentAnnotations }}
     annotations:
     {{- toYaml . | nindent 4 }}
@@ -14,7 +14,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "vault-secret-sync-operator.selectorLabels" . | nindent 6 }}
+      {{- include "secretsync-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -22,13 +22,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "vault-secret-sync-operator.selectorLabels" . | nindent 8 }}
+        {{- include "secretsync-operator.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "vault-secret-sync-operator.serviceAccountName" . }}
+      serviceAccountName: {{ include "secretsync-operator.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -45,7 +45,7 @@ spec:
             {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ include "vault-secret-sync-operator.metricsPort" . }}
+            - containerPort: {{ include "secretsync-operator.metricsPort" . }}
               name: metrics
           livenessProbe:
             httpGet:
@@ -79,7 +79,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "vault-secret-sync-operator.configMapName" . }}
+            name: {{ include "secretsync-operator.configMapName" . }}
             defaultMode: 420
             optional: true
         {{- with .Values.extraVolumes }}

@@ -1,0 +1,231 @@
+# Pipeline Configuration Example
+# 
+# This example shows a complete multi-account secrets sync configuration
+# with AWS Control Tower integration and inheritance hierarchies.
+
+# =============================================================================
+# Global Settings
+# =============================================================================
+log:
+  level: info      # debug, info, warn, error
+  format: json     # json, text
+
+# =============================================================================
+# Vault Configuration
+# =============================================================================
+vault:
+  address: https://vault.example.com/
+  namespace: eng/data-platform
+  auth:
+    # AppRole authentication (recommended for CI/CD)
+    approle:
+      mount: approle
+      role_id: ${VAULT_ROLE_ID}        # Environment variable
+      secret_id: ${VAULT_SECRET_ID}
+    
+    # Alternative: Token authentication
+    # token:
+    #   token: ${VAULT_TOKEN}
+    
+    # Alternative: Kubernetes authentication
+    # kubernetes:
+    #   role: secretsync
+    #   mount_path: kubernetes
+
+# =============================================================================
+# AWS Configuration - Control Tower / Organizations
+# =============================================================================
+aws:
+  region: us-east-1
+  
+  # Execution Context: Where is this pipeline running from?
+  execution_context:
+    # Option 1: Management Account (not recommended for production)
+    type: management_account
+    account_id: "123456789012"
+    
+    # Option 2: Delegated Administrator (recommended)
+    # type: delegated_admin
+    # account_id: "987654321098"
+    # delegation:
+    #   services:
+    #     - sso.amazonaws.com
+    #     - organizations.amazonaws.com
+    
+    # Option 3: Custom Hub Account
+    # type: hub_account
+    # account_id: "111111111111"
+    # custom_role_pattern: "arn:aws:iam::{{.AccountID}}:role/SecretsHubAccess"
+
+  # Control Tower integration
+  control_tower:
+    enabled: true
+    execution_role:
+      name: AWSControlTowerExecution  # Standard Control Tower role
+      # Or custom:
+      # name: CustomSecretsRole
+      # path: /secrets/
+    
+    account_factory:
+      enabled: true
+      on_account_creation: true  # Auto-sync to new accounts
+
+  # Organizations structure (optional - for dynamic discovery)
+  organizations:
+    auto_discover: true
+    # Or explicit:
+    # root_id: r-xxxx
+    # ous:
+    #   Workloads:
+    #     Production:
+    #       id: ou-xxxx-prod
+    #     Development:
+    #       id: ou-xxxx-dev
+
+  # Identity Center / SSO (optional - for dynamic discovery)
+  identity_center:
+    enabled: true
+    auto_discover: true
+    # Or explicit:
+    # instance_arn: arn:aws:sso:::instance/ssoins-xxxxxxxx
+    # identity_store_id: d-xxxxxxxxxx
+
+# =============================================================================
+# Secret Sources
+# =============================================================================
+# Define where secrets can be imported FROM
+
+sources:
+  # Vault KV2 mounts
+  analytics:
+    vault:
+      mount: analytics
+      # Optional: filter specific paths
+      # paths:
+      #   - "shared/*"
+      #   - "api-keys/*"
+  
+  analytics-engineers:
+    vault:
+      mount: analytics-engineers
+
+  # Import from another Vault namespace
+  # shared-infra:
+  #   vault:
+  #     address: https://vault.example.com/
+  #     namespace: infra/shared
+  #     mount: secrets
+
+  # Import existing secrets from AWS account
+  # legacy-secrets:
+  #   aws:
+  #     account_id: "999999999999"
+  #     region: us-east-1
+  #     prefix: "/legacy/"
+
+# =============================================================================
+# Merge Store
+# =============================================================================
+# Intermediate storage for aggregated secrets before sync
+
+merge_store:
+  vault:
+    mount: merged-secrets
+    # Secrets for target "Foo" stored at: merged-secrets/Foo/*
+  
+  # Alternative: S3
+  # s3:
+  #   bucket: my-secrets-bucket
+  #   prefix: merged/
+  #   kms_key_id: alias/secrets-key
+
+# =============================================================================
+# Sync Targets
+# =============================================================================
+# Define where secrets are synced TO
+
+targets:
+  # Base target - imports directly from sources
+  Serverless_Stg:
+    account_id: "111111111111"
+    imports:
+      - analytics           # From sources.analytics
+      - analytics-engineers # From sources.analytics-engineers
+    # Optional overrides:
+    # region: us-west-2
+    # secret_prefix: "/app/"
+    # role_arn: arn:aws:iam::111111111111:role/CustomRole
+
+  # Derived target - inherits from another target
+  Serverless_Prod:
+    account_id: "222222222222"
+    imports:
+      - Serverless_Stg      # Inherits ALL merged secrets from Stg
+    # Can also add additional sources:
+    # - prod-only-secrets
+
+  # Further inheritance
+  livequery_demos:
+    account_id: "333333333333"
+    imports:
+      - Serverless_Prod     # Inherits from Prod (which inherited from Stg)
+
+  # Independent target with same sources
+  Analytics_Testbed:
+    account_id: "444444444444"
+    imports:
+      - analytics
+      - analytics-engineers
+    # Note: This has the same imports as Stg but they're processed independently
+
+  # Multiple inheritance
+  Data_Platform_Testbed:
+    account_id: "555555555555"
+    imports:
+      - analytics
+      - Serverless_Stg        # Get Stg's merged secrets too
+      - analytics-engineers
+
+# =============================================================================
+# Dynamic Targets (Optional)
+# =============================================================================
+# Discover targets at runtime from AWS
+
+dynamic_targets:
+  # All accounts where Analytics Engineers have access
+  analytics_engineer_sandboxes:
+    discovery:
+      identity_center:
+        group: "Analytics Engineers"
+        # Or by permission set:
+        # permission_set: "AnalyticsEngineerAccess"
+    imports:
+      - analytics
+      - analytics-engineers
+    exclude:
+      - "222222222222"  # Exclude production account
+
+  # All accounts in Development OU
+  # dev_environments:
+  #   discovery:
+  #     organizations:
+  #       ou: "ou-xxxx-development"
+  #       # Or by tags:
+  #       # tags:
+  #       #   Environment: development
+  #   imports:
+  #     - analytics
+
+# =============================================================================
+# Pipeline Settings
+# =============================================================================
+pipeline:
+  merge:
+    parallel: 4           # Max concurrent merge operations per dependency level
+  
+  sync:
+    parallel: 4           # Max concurrent sync operations
+    delete_orphans: false # Remove secrets from target that aren't in source
+  
+  dry_run: false          # Override with --dry-run flag
+  continue_on_error: true # Don't fail entire pipeline on single target failure

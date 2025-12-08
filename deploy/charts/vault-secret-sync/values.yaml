@@ -1,9 +1,90 @@
 nameOverride: ""
 
 existingConfigMap: ""
-configMapName: vault-secret-sync-config
+configMapName: secretsync-config
 
+# Legacy config format (operator mode)
 config: {}
+
+# =============================================================================
+# Pipeline Configuration (NEW)
+# =============================================================================
+# Unified pipeline configuration for multi-account secrets management.
+# Works identically via CLI, Kubernetes operator, or Helm.
+#
+# Operations:
+#   - merge:    Source stores → Merge store (with inheritance)
+#   - sync:     Merge store → AWS Secrets Manager
+#   - pipeline: merge + sync in dependency order
+
+pipeline:
+  # Enable pipeline mode (uses new unified config format)
+  enabled: false
+  
+  # Pipeline configuration (inline or reference existing ConfigMap)
+  # existingConfigMap: my-pipeline-config
+  
+  config: {}
+  # Example pipeline configuration:
+  # config:
+  #   vault:
+  #     address: https://vault.example.com/
+  #     namespace: eng/data-platform
+  #     auth:
+  #       approle:
+  #         role_id: ${VAULT_ROLE_ID}
+  #         secret_id: ${VAULT_SECRET_ID}
+  #   
+  #   aws:
+  #     region: us-east-1
+  #     execution_context:
+  #       type: delegated_admin
+  #       account_id: "123456789012"
+  #     control_tower:
+  #       enabled: true
+  #       execution_role:
+  #         name: AWSControlTowerExecution
+  #   
+  #   sources:
+  #     analytics:
+  #       vault:
+  #         mount: analytics
+  #     analytics-engineers:
+  #       vault:
+  #         mount: analytics-engineers
+  #   
+  #   merge_store:
+  #     vault:
+  #       mount: merged-secrets
+  #   
+  #   targets:
+  #     Serverless_Stg:
+  #       account_id: "111111111111"
+  #       imports:
+  #         - analytics
+  #         - analytics-engineers
+  #     Serverless_Prod:
+  #       account_id: "222222222222"
+  #       imports:
+  #         - Serverless_Stg  # Inherits from Stg
+  #   
+  #   pipeline:
+  #     merge:
+  #       parallel: 4
+  #     sync:
+  #       parallel: 4
+  #       delete_orphans: false
+
+  # Schedule for automatic pipeline runs (cron format)
+  # Leave empty to disable scheduled runs
+  schedule: ""
+  # schedule: "0,30 * * * *"  # Every 30 minutes
+  
+  # Default operation when triggered
+  operation: pipeline  # merge, sync, or pipeline
+  
+  # Continue processing even if some targets fail
+  continueOnError: true
 # # The log level for the application. Can be one of "debug", "info", "warn", "error", "fatal", or "panic".
 # log:
 #   level: "debug" # The log level for the application. Can be one of "debug", "info", "warn", "error", "fatal", or "panic".
@@ -104,13 +185,13 @@ config: {}
 #       }
 
 
-vault-secret-sync-operator:
+secretsync-operator:
   enabled: true
-  existingConfigMap: vault-secret-sync-config
+  existingConfigMap: secretsync-config
   replicaCount: 1
 
   image:
-    repository: docker.io/jbcom/vault-secret-sync
+    repository: docker.io/jbcom/secretsync
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
@@ -175,13 +256,13 @@ vault-secret-sync-operator:
   extraVolumes: []
   
 
-vault-secret-sync-events:
+secretsync-events:
   enabled: true
-  existingConfigMap: vault-secret-sync-config
+  existingConfigMap: secretsync-config
   replicaCount: 1
 
   image:
-    repository: docker.io/jbcom/vault-secret-sync
+    repository: docker.io/jbcom/secretsync
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
+	"github.com/jbcom/secretsync/api/v1alpha1"
 )
 
 func ExecuteTransformTemplate(sc v1alpha1.VaultSecretSync, secret []byte) ([]byte, error) {

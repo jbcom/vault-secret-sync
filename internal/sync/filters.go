@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/transforms"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/transforms"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "vault-secret-sync-events.fullname" . }}
+  name: {{ include "secretsync-events.fullname" . }}
   labels:
-    {{- include "vault-secret-sync-events.labels" . | nindent 4 }}
+    {{- include "secretsync-events.labels" . | nindent 4 }}
     {{- with .Values.deploymentAnnotations }}
     annotations:
     {{- toYaml . | nindent 4 }}
@@ -14,7 +14,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "vault-secret-sync-events.selectorLabels" . | nindent 6 }}
+      {{- include "secretsync-events.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -22,13 +22,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "vault-secret-sync-events.selectorLabels" . | nindent 8 }}
+        {{- include "secretsync-events.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "vault-secret-sync-events.serviceAccountName" . }}
+      serviceAccountName: {{ include "secretsync-events.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -39,9 +39,9 @@ spec:
           args: ["-config", "/config/config.yaml", "-events"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ include "vault-secret-sync-events.containerPort" . }}
+            - containerPort: {{ include "secretsync-events.containerPort" . }}
               name: http
-            - containerPort: {{ include "vault-secret-sync-events.metricsPort" . }}
+            - containerPort: {{ include "secretsync-events.metricsPort" . }}
               name: metrics
           livenessProbe:
             httpGet:
@@ -75,7 +75,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "vault-secret-sync-events.configMapName" . }}
+            name: {{ include "secretsync-events.configMapName" . }}
             defaultMode: 420
             optional: true
         {{- with .Values.extraVolumes }}

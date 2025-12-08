@@ -3,8 +3,8 @@ package sync
 import (
 	"context"
 
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/metrics"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/queue"
-	"github.com/robertlestak/vault-secret-sync/internal/srvutils"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/queue"
+	"github.com/jbcom/secretsync/internal/srvutils"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 
-	vaultv1alpha1 "github.com/robertlestak/vault-secret-sync/api/v1alpha1"
+	vaultv1alpha1 "github.com/jbcom/secretsync/api/v1alpha1"
 	zzap "go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"

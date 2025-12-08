@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "vault-secret-sync.name" -}}
+{{- define "secretsync.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -9,7 +9,7 @@ Expand the name of the chart.
 {{/*
 Define the name of the configMap.
 */}}
-{{- define "vault-secret-sync.configMapName" -}}
+{{- define "secretsync.configMapName" -}}
 {{- if .Values.existingConfigMap }}
 {{- .Values.existingConfigMap -}}
 {{- else if .Values.configMapName }}
@@ -23,15 +23,15 @@ Define the name of the configMap.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "vault-secret-sync.chart" -}}
+{{- define "secretsync.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "vault-secret-sync.labels" -}}
-helm.sh/chart: {{ include "vault-secret-sync.chart" . }}
+{{- define "secretsync.labels" -}}
+helm.sh/chart: {{ include "secretsync.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}

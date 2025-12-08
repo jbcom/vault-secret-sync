@@ -10,14 +10,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/config"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
-	"github.com/robertlestak/vault-secret-sync/internal/queue"
-	"github.com/robertlestak/vault-secret-sync/internal/server"
-	"github.com/robertlestak/vault-secret-sync/internal/sync"
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/config"
+	"github.com/jbcom/secretsync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/queue"
+	"github.com/jbcom/secretsync/internal/server"
+	"github.com/jbcom/secretsync/internal/sync"
+	"github.com/jbcom/secretsync/pkg/driver"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/robertlestak/vault-secret-sync/internal/event"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/event"
+	"github.com/jbcom/secretsync/internal/metrics"
 	log "github.com/sirupsen/logrus"
 )
 

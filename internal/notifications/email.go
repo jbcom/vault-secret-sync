@@ -5,9 +5,9 @@ import (
 	"crypto/tls"
 	"fmt"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/config"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/config"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )

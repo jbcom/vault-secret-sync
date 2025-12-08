@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/queue"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/queue"
 	"github.com/stretchr/testify/assert"
 )
 

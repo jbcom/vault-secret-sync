@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 ###
-# Build a static vault-secret-sync binary for the requested platform.
+# Build a static secretsync binary for the requested platform.
 # Tests now run in CI (outside Docker), so this Dockerfile focuses purely
 # on compiling and packaging the runtime image.
 ###
@@ -47,7 +47,7 @@ ARG VSS_CONFIG=/etc/vss/config.yaml
 ENV VSS_CONFIG=${VSS_CONFIG} \
     VSS_VERSION=${VERSION}
 
-LABEL org.opencontainers.image.title="vault-secret-sync" \
+LABEL org.opencontainers.image.title="secretsync" \
       org.opencontainers.image.source="https://github.com/jbcom/jbcom-oss-ecosystem" \
       org.opencontainers.image.version=${VERSION}
 

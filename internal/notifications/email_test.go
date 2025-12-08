@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	aws "github.com/robertlestak/vault-secret-sync/stores/aws"
-	vault "github.com/robertlestak/vault-secret-sync/stores/vault"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	aws "github.com/jbcom/secretsync/stores/aws"
+	vault "github.com/jbcom/secretsync/stores/vault"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/gomail.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

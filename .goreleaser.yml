@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 
-project_name: vault-secret-sync
+project_name: secretsync
 
 before:
   hooks:
@@ -86,23 +86,23 @@ changelog:
 release:
   github:
     owner: jbcom
-    name: vault-secret-sync
+    name: secretsync
   draft: false
   prerelease: auto
   mode: replace
   header: |
-    ## vault-secret-sync {{ .Tag }}
+    ## secretsync {{ .Tag }}
 
     ### Installation
 
     **Docker:**
     ```bash
-    docker pull jbcom/vault-secret-sync:{{ .Version }}
+    docker pull jbcom/secretsync:{{ .Version }}
     ```
 
     **Helm (OCI):**
     ```bash
-    helm install vault-secret-sync oci://registry-1.docker.io/jbcom/vault-secret-sync --version {{ .Version }}
+    helm install secretsync oci://registry-1.docker.io/jbcom/secretsync --version {{ .Version }}
     ```
 
     **Binary:**
@@ -110,7 +110,7 @@ release:
 
   footer: |
     ---
-    **Full Changelog**: https://github.com/jbcom/vault-secret-sync/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/jbcom/secretsync/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 # Docker images and Helm charts are built/pushed separately
 # via dedicated workflow jobs for better control

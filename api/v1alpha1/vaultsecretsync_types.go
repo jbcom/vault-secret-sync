@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"github.com/robertlestak/vault-secret-sync/stores/aws"
-	"github.com/robertlestak/vault-secret-sync/stores/awsidentitycenter"
-	"github.com/robertlestak/vault-secret-sync/stores/doppler"
-	"github.com/robertlestak/vault-secret-sync/stores/gcp"
-	"github.com/robertlestak/vault-secret-sync/stores/github"
-	"github.com/robertlestak/vault-secret-sync/stores/httpstore"
-	"github.com/robertlestak/vault-secret-sync/stores/vault"
+	"github.com/jbcom/secretsync/stores/aws"
+	"github.com/jbcom/secretsync/stores/awsidentitycenter"
+	"github.com/jbcom/secretsync/stores/doppler"
+	"github.com/jbcom/secretsync/stores/gcp"
+	"github.com/jbcom/secretsync/stores/github"
+	"github.com/jbcom/secretsync/stores/httpstore"
+	"github.com/jbcom/secretsync/stores/vault"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

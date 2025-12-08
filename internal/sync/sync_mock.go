@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/driver"
 )
 
 type MockSyncClient struct {

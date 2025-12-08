@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/stores/aws"
-	"github.com/robertlestak/vault-secret-sync/stores/vault"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/stores/aws"
+	"github.com/jbcom/secretsync/stores/vault"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

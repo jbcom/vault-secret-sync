@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/robertlestak/vault-secret-sync/internal/transforms"
+	"github.com/jbcom/secretsync/internal/transforms"
 	log "github.com/sirupsen/logrus"
 )
 

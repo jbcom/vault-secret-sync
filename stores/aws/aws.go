@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -10,7 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,6 +24,14 @@ type AwsClient struct {
 	EncryptionKey  string            `yaml:"encryptionKey,omitempty" json:"encryptionKey,omitempty"`
 	ReplicaRegions []string          `yaml:"replicaRegions,omitempty" json:"replicaRegions,omitempty"`
 	Tags           map[string]string `yaml:"tags,omitempty" json:"tags,omitempty"`
+
+	// NoEmptySecrets skips secrets with empty/null values during listing
+	// Matches terraform-aws-secretsmanager no_empty_secrets behavior
+	NoEmptySecrets bool `yaml:"noEmptySecrets,omitempty" json:"noEmptySecrets,omitempty"`
+
+	// SkipUnchanged enables idempotent writes (skip if value unchanged)
+	// Uses JSON-aware comparison for proper equality checking
+	SkipUnchanged bool `yaml:"skipUnchanged,omitempty" json:"skipUnchanged,omitempty"`
 
 	client *secretsmanager.Client `yaml:"-" json:"-"`
 
@@ -35,6 +45,13 @@ func (in *AwsClient) DeepCopyInto(out *AwsClient) {
 		in, out := &in.ReplicaRegions, &out.ReplicaRegions
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.Tags != nil {
+		in, out := &in.Tags, &out.Tags
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	if in.accountSecretArns != nil {
 		in, out := &in.accountSecretArns, &out.accountSecretArns
@@ -238,14 +255,45 @@ func (c *AwsClient) updateSecret(ctx context.Context, name string, secret []byte
 
 func (g *AwsClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta, path string, secrets []byte) ([]byte, error) {
 	l := log.WithFields(log.Fields{
-		"action": "WriteSecret",
-		"driver": g.Driver(),
-		"path":   path,
+		"action":        "WriteSecret",
+		"driver":        g.Driver(),
+		"path":          path,
+		"skipUnchanged": g.SkipUnchanged,
 	})
 	l.Trace("start")
 	defer l.Trace("end")
-	// if there is an existing secret, update it
-	if _, ok := g.accountSecretArns[path]; ok {
+
+	// Handle path conflicts: /foo vs foo
+	// Check if alternate path format exists and handle it
+	alternatePath := g.getAlternatePath(path)
+	if alternatePath != "" {
+		if _, hasAlternate := g.accountSecretArns[alternatePath]; hasAlternate {
+			l.WithField("alternatePath", alternatePath).Warn("Found conflicting path format, deleting alternate")
+			if err := g.DeleteSecret(ctx, alternatePath); err != nil {
+				l.WithError(err).WithField("alternatePath", alternatePath).Error("Failed to delete conflicting path")
+				// Continue anyway - we'll create/update the correct path
+			}
+		}
+	}
+
+	// If there is an existing secret, check if update is needed
+	if arn, ok := g.accountSecretArns[path]; ok {
+		// Idempotency: skip if value unchanged
+		if g.SkipUnchanged {
+			existingValue, err := g.getSecretValue(ctx, arn)
+			if err != nil {
+				l.WithError(err).Debug("Could not read existing secret for comparison")
+			} else {
+				equal, err := utils.CompareSecretsJSON(existingValue, secrets)
+				if err != nil {
+					l.WithError(err).Debug("Error comparing secrets")
+				} else if equal {
+					l.Debug("Secret unchanged, skipping update")
+					return nil, nil
+				}
+			}
+		}
+
 		err := g.updateSecret(ctx, path, secrets)
 		if err != nil {
 			l.Errorf("error: %v", err)
@@ -257,6 +305,32 @@ func (g *AwsClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta, pat
 			l.Errorf("error: %v", err)
 			return nil, err
 		}
+	}
+	return nil, nil
+}
+
+// getAlternatePath returns the alternate path format (/foo vs foo)
+// Returns empty string if path is empty
+func (g *AwsClient) getAlternatePath(path string) string {
+	if path == "" {
+		return ""
+	}
+	if strings.HasPrefix(path, "/") {
+		return path[1:] // /foo -> foo
+	}
+	return "/" + path // foo -> /foo
+}
+
+// getSecretValue retrieves the current value of a secret by ARN
+func (g *AwsClient) getSecretValue(ctx context.Context, arn string) ([]byte, error) {
+	resp, err := g.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+		SecretId: &arn,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.SecretString != nil {
+		return []byte(*resp.SecretString), nil
 	}
 	return nil, nil
 }
@@ -282,7 +356,8 @@ func (g *AwsClient) DeleteSecret(ctx context.Context, secret string) error {
 
 func (g *AwsClient) ListSecrets(ctx context.Context, p string) ([]string, error) {
 	l := log.WithFields(log.Fields{
-		"action": "ListSecrets",
+		"action":         "ListSecrets",
+		"noEmptySecrets": g.NoEmptySecrets,
 	})
 	l.Trace("start")
 	defer l.Trace("end")
@@ -292,6 +367,9 @@ func (g *AwsClient) ListSecrets(ctx context.Context, p string) ([]string, error)
 	for {
 		params := &secretsmanager.ListSecretsInput{
 			NextToken: nextToken,
+			// Exclude secrets scheduled for deletion
+			// Matches terraform-aws-secretsmanager IncludePlannedDeletion=False
+			IncludePlannedDeletion: aws.Bool(false),
 		}
 		resp, err := g.client.ListSecrets(ctx, params)
 		if err != nil {
@@ -299,8 +377,23 @@ func (g *AwsClient) ListSecrets(ctx context.Context, p string) ([]string, error)
 			return nil, err
 		}
 		for _, secret := range resp.SecretList {
-			arnMap[*secret.Name] = *secret.ARN
-			secretsList = append(secretsList, *secret.Name)
+			secretName := *secret.Name
+
+			// Skip empty secrets if configured
+			// Matches terraform-aws-secretsmanager no_empty_secrets behavior
+			if g.NoEmptySecrets {
+				isEmpty, err := g.isSecretEmpty(ctx, *secret.ARN)
+				if err != nil {
+					l.WithError(err).WithField("secret", secretName).Debug("Error checking if secret is empty")
+					// Include on error (fail open)
+				} else if isEmpty {
+					l.WithField("secret", secretName).Debug("Skipping empty secret")
+					continue
+				}
+			}
+
+			arnMap[secretName] = *secret.ARN
+			secretsList = append(secretsList, secretName)
 		}
 		if resp.NextToken == nil {
 			break
@@ -309,6 +402,34 @@ func (g *AwsClient) ListSecrets(ctx context.Context, p string) ([]string, error)
 	}
 	g.accountSecretArns = arnMap
 	return secretsList, nil
+}
+
+// isSecretEmpty checks if a secret has empty or null value
+func (g *AwsClient) isSecretEmpty(ctx context.Context, arn string) (bool, error) {
+	resp, err := g.client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+		SecretId: &arn,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	// Check for nil/empty string
+	if resp.SecretString == nil || *resp.SecretString == "" {
+		return true, nil
+	}
+
+	// Check for JSON null
+	if *resp.SecretString == "null" {
+		return true, nil
+	}
+
+	// Check for empty JSON object/array
+	trimmed := strings.TrimSpace(*resp.SecretString)
+	if trimmed == "{}" || trimmed == "[]" {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (c *AwsClient) SetDefaults(defaults any) error {
@@ -332,6 +453,14 @@ func (c *AwsClient) SetDefaults(defaults any) error {
 	}
 	if len(c.ReplicaRegions) == 0 && len(dc.ReplicaRegions) > 0 {
 		c.ReplicaRegions = dc.ReplicaRegions
+	}
+	// Inherit NoEmptySecrets and SkipUnchanged if not explicitly set
+	// These are typically set via config, not defaults
+	if dc.NoEmptySecrets {
+		c.NoEmptySecrets = dc.NoEmptySecrets
+	}
+	if dc.SkipUnchanged {
+		c.SkipUnchanged = dc.SkipUnchanged
 	}
 	return nil
 }

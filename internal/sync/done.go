@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
-	"github.com/robertlestak/vault-secret-sync/internal/notifications"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/notifications"
 	log "github.com/sirupsen/logrus"
 )
 

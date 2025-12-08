@@ -8,7 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/utils"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/vault/api"
@@ -281,13 +282,21 @@ func (vc *VaultClient) GetSecret(ctx context.Context, s string) ([]byte, error) 
 }
 
 // WriteSecret will login and retry secret write on failure
-// to gracefully handle token expiration
+// to gracefully handle token expiration.
+//
+// When Merge is true, uses deepmerge semantics matching the original
+// terraform-aws-secretsmanager pipeline:
+//   - Lists: APPEND (src items appended to dst)
+//   - Dicts: MERGE (recursive deep merge)
+//   - Scalars: OVERRIDE (later value wins)
+//   - Type conflicts: OVERRIDE (later value wins)
 func (vc *VaultClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta, s string, bData []byte) ([]byte, error) {
 	l := log.WithFields(log.Fields{
 		"address": vc.Address,
 		"role":    vc.Role,
 		"path":    s,
 		"method":  vc.AuthMethod,
+		"merge":   vc.Merge,
 	})
 	var data map[string]interface{}
 	err := json.Unmarshal(bData, &data)
@@ -298,17 +307,23 @@ func (vc *VaultClient) WriteSecret(ctx context.Context, meta metav1.ObjectMeta, 
 	if vc.Merge {
 		sec, err := vc.GetSecret(ctx, s)
 		if err != nil {
-			return nil, err
+			// Secret doesn't exist yet, that's fine for merge
+			l.WithError(err).Debug("No existing secret to merge with, creating new")
+		} else {
+			var existingData map[string]interface{}
+			err = json.Unmarshal(sec, &existingData)
+			if err != nil {
+				l.WithError(err).Warn("Failed to parse existing secret as JSON, will override")
+			} else {
+				// Use proper deepmerge: existing + new data
+				// This matches Python deepmerge.Merger behavior:
+				// - Lists: append
+				// - Dicts: recursive merge
+				// - Scalars/conflicts: override
+				data = utils.DeepMerge(existingData, data)
+				l.Debug("Applied deepmerge to existing secret")
+			}
 		}
-		var secd map[string]interface{}
-		err = json.Unmarshal(sec, &secd)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range data {
-			secd[k] = v
-		}
-		data = secd
 	}
 	terr := vc.NewToken(ctx)
 	if terr != nil {

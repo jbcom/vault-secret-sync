@@ -13,8 +13,8 @@ import (
 	"net/http/httputil"
 	"slices"
 
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
-	"github.com/robertlestak/vault-secret-sync/pkg/kubesecret"
+	"github.com/jbcom/secretsync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/kubesecret"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

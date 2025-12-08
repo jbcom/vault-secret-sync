@@ -11,12 +11,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/vault/audit"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/robertlestak/vault-secret-sync/internal/config"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
-	"github.com/robertlestak/vault-secret-sync/internal/queue"
-	"github.com/robertlestak/vault-secret-sync/internal/srvutils"
-	"github.com/robertlestak/vault-secret-sync/internal/sync"
+	"github.com/jbcom/secretsync/internal/config"
+	"github.com/jbcom/secretsync/internal/event"
+	"github.com/jbcom/secretsync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/queue"
+	"github.com/jbcom/secretsync/internal/srvutils"
+	"github.com/jbcom/secretsync/internal/sync"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/pkg/driver"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/google/go-github/v62/github"

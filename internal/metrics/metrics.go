@@ -8,7 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/robertlestak/vault-secret-sync/internal/srvutils"
+	"github.com/jbcom/secretsync/internal/srvutils"
 	log "github.com/sirupsen/logrus"
 )
 

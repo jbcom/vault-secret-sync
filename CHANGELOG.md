@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Original Source
 - **Author**: Robert Lestak
-- **Repository**: [robertlestak/vault-secret-sync](https://github.com/robertlestak/vault-secret-sync)
+- **Repository**: [robertlestak/vault-secret-sync](https://github.com/jbcom/secretsync)
 - **License**: MIT
 
 ### Fork Rationale

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/event"
 	log "github.com/sirupsen/logrus"
 )
 

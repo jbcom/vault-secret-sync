@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
+	"github.com/jbcom/secretsync/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "vault-secret-sync-operator.name" -}}
+{{- define "secretsync-operator.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "vault-secret-sync-operator.fullname" -}}
+{{- define "secretsync-operator.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,15 +26,15 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "vault-secret-sync-operator.chart" -}}
+{{- define "secretsync-operator.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "vault-secret-sync-operator.labels" -}}
-helm.sh/chart: {{ include "vault-secret-sync-operator.chart" . }}
+{{- define "secretsync-operator.labels" -}}
+helm.sh/chart: {{ include "secretsync-operator.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -44,26 +44,26 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Common Selector labels
 */}}
-{{- define "vault-secret-sync-operator.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "vault-secret-sync-operator.name" . }}
+{{- define "secretsync-operator.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "secretsync-operator.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Operator Selector labels
 */}}
-{{- define "vault-secret-sync-operator.operatorLabels" -}}
-{{ include "vault-secret-sync-operator.labels" . }}
-{{ include "vault-secret-sync-operator.selectorLabels" . }}
+{{- define "secretsync-operator.operatorLabels" -}}
+{{ include "secretsync-operator.labels" . }}
+{{ include "secretsync-operator.selectorLabels" . }}
 app.kubernetes.io/component: operator
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "vault-secret-sync-operator.serviceAccountName" -}}
+{{- define "secretsync-operator.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "vault-secret-sync-operator.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "secretsync-operator.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -73,7 +73,7 @@ Create the name of the service account to use
 {{/*
 Simplify the definition of the kube metrics port
 */}}
-{{- define "vault-secret-sync-operator.kubeMetricsPort" -}}
+{{- define "secretsync-operator.kubeMetricsPort" -}}
 {{- if .Values.config.backend }}
 {{- default "9080" .Values.config.backend.metricsAddr }}
 {{- else }}
@@ -84,17 +84,17 @@ Simplify the definition of the kube metrics port
 {{/*
 Simplify the definition of the event port
 */}}
-{{- define "vault-secret-sync-operator.metricsPort" -}}
+{{- define "secretsync-operator.metricsPort" -}}
 {{- default "9090" .Values.metricsPort }}
 {{- end }}
 
 {{/*
 Create the name of the configMap to use
 */}}
-{{- define "vault-secret-sync-operator.configMapName" -}}
+{{- define "secretsync-operator.configMapName" -}}
 {{- if .Values.existingConfigMap }}
 {{- .Values.existingConfigMap -}}
 {{- else }}
-{{- include "vault-secret-sync-operator.fullname" . -}}
+{{- include "secretsync-operator.fullname" . -}}
 {{- end }}
 {{- end -}}

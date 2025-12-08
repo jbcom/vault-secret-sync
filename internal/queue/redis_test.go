@@ -10,7 +10,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
+	"github.com/jbcom/secretsync/internal/event"
 )
 
 func setupTestRedis(t *testing.T) (*miniredis.Miniredis, *RedisQueue) {

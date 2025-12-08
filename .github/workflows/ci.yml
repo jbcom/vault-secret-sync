@@ -17,8 +17,8 @@ permissions:
 env:
   GO_VERSION: "1.25"
   REGISTRY: docker.io
-  IMAGE_NAME: jbcom/vault-secret-sync
-  HELM_REGISTRY: oci://registry-1.docker.io/jbcom/vault-secret-sync
+  IMAGE_NAME: jbcom/secretsync
+  HELM_REGISTRY: oci://registry-1.docker.io/jbcom/secretsync
 
 jobs:
   # ============================================
@@ -198,14 +198,14 @@ jobs:
 
       - name: Update Chart.yaml version
         run: |
-          cd deploy/charts/vault-secret-sync
+          cd deploy/charts/secretsync
           sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" Chart.yaml
           sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" Chart.yaml
           cat Chart.yaml
 
       - name: Update sub-chart versions
         run: |
-          for chart in deploy/charts/vault-secret-sync/charts/*/Chart.yaml; do
+          for chart in deploy/charts/secretsync/charts/*/Chart.yaml; do
             if [ -f "$chart" ]; then
               sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" "$chart"
               sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" "$chart"
@@ -220,12 +220,12 @@ jobs:
 
       - name: Package Helm chart
         run: |
-          helm dependency update deploy/charts/vault-secret-sync || true
-          helm package deploy/charts/vault-secret-sync
+          helm dependency update deploy/charts/secretsync || true
+          helm package deploy/charts/secretsync
 
       - name: Push Helm chart to Docker Hub
         run: |
-          helm push vault-secret-sync-${{ steps.version.outputs.version }}.tgz ${{ env.HELM_REGISTRY }}
+          helm push secretsync-${{ steps.version.outputs.version }}.tgz ${{ env.HELM_REGISTRY }}
 
   # ============================================
   # AUTO-RELEASE (main branch - semantic versioning)

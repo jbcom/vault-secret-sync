@@ -6,7 +6,7 @@ import (
 	gosync "sync"
 	"time"
 
-	"github.com/robertlestak/vault-secret-sync/internal/event"
+	"github.com/jbcom/secretsync/internal/event"
 	log "github.com/sirupsen/logrus"
 )
 

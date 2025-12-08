@@ -11,13 +11,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/backend"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
-	"github.com/robertlestak/vault-secret-sync/internal/queue"
-	"github.com/robertlestak/vault-secret-sync/internal/transforms"
-	"github.com/robertlestak/vault-secret-sync/pkg/driver"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/backend"
+	"github.com/jbcom/secretsync/internal/event"
+	"github.com/jbcom/secretsync/internal/metrics"
+	"github.com/jbcom/secretsync/internal/queue"
+	"github.com/jbcom/secretsync/internal/transforms"
+	"github.com/jbcom/secretsync/pkg/driver"
 	log "github.com/sirupsen/logrus"
 )
 

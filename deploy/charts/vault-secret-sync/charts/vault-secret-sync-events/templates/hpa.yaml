@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "vault-secret-sync-events.fullname" . }}
+  name: {{ include "secretsync-events.fullname" . }}
   labels:
-    {{- include "vault-secret-sync-events.labels" . | nindent 4 }}
+    {{- include "secretsync-events.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "vault-secret-sync-events.fullname" . }}
+    name: {{ include "secretsync-events.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

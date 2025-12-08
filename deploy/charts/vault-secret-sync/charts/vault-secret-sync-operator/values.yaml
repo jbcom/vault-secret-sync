@@ -1,4 +1,4 @@
-# Default values for vault-secret-sync-operator.
+# Default values for secretsync-operator.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -116,7 +116,7 @@ leaderElection:
 replicaCount: 1
 
 image:
-  repository: docker.io/jbcom/vault-secret-sync
+  repository: docker.io/jbcom/secretsync
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""

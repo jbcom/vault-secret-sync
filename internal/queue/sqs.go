@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/robertlestak/vault-secret-sync/internal/event"
+	"github.com/jbcom/secretsync/internal/event"
 )
 
 type SQSQueue struct {

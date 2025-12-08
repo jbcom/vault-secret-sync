@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/robertlestak/vault-secret-sync/api/v1alpha1"
-	"github.com/robertlestak/vault-secret-sync/internal/metrics"
+	"github.com/jbcom/secretsync/api/v1alpha1"
+	"github.com/jbcom/secretsync/internal/metrics"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,6 +17,7 @@ var (
 
 const (
 	BackendTypeKubernetes BackendType = "kubernetes"
+	BackendTypeFile       BackendType = "file"
 )
 
 type BackendType string
@@ -36,6 +37,8 @@ func NewBackend(t BackendType) (Backend, error) {
 	switch t {
 	case BackendTypeKubernetes:
 		return NewKubernetesBackend(), nil
+	case BackendTypeFile:
+		return NewFileBackend(), nil
 	default:
 		return nil, fmt.Errorf("unknown backend type: %s", t)
 	}
