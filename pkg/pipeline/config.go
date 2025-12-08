@@ -324,8 +324,17 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("merge_store must specify either vault or s3")
 	}
 
-	if len(c.Targets) == 0 && len(c.DynamicTargets) == 0 {
-		return fmt.Errorf("at least one target or dynamic_target is required")
+	// S3 merge store is not yet implemented
+	if c.MergeStore.S3 != nil {
+		return fmt.Errorf("merge_store.s3 is not yet implemented; use merge_store.vault instead")
+	}
+
+	// At least one static target is required (dynamic targets not yet implemented)
+	if len(c.Targets) == 0 {
+		if len(c.DynamicTargets) > 0 {
+			return fmt.Errorf("dynamic_targets are not yet implemented; use static targets instead")
+		}
+		return fmt.Errorf("at least one target is required")
 	}
 
 	// Validate targets

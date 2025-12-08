@@ -234,7 +234,11 @@ func (ec *AWSExecutionContext) validateExecutionContext() error {
 		if ec.OrganizationInfo != nil && !ec.OrganizationInfo.IsDelegatedAdmin {
 			l.Warn("Account may not be a delegated administrator - cross-account access may fail")
 		}
-		l.WithField("services", ec.OrganizationInfo.DelegatedServices).Info("Validated: running from delegated admin account")
+		if ec.OrganizationInfo != nil {
+			l.WithField("services", ec.OrganizationInfo.DelegatedServices).Info("Validated: running from delegated admin account")
+		} else {
+			l.Info("Validated: running as delegated admin (organization info unavailable)")
+		}
 
 	case ExecutionContextHub:
 		l.Info("Validated: running from hub account with custom role pattern")
@@ -360,7 +364,7 @@ func (ec *AWSExecutionContext) CanAccessOrganizations() bool {
 // GetIdentityCenterClient returns an Identity Center client if accessible
 func (ec *AWSExecutionContext) GetIdentityCenterClient(ctx context.Context) (*ssoadmin.Client, error) {
 	if !ec.Config.IdentityCenter.Enabled {
-		return nil, fmt.Errorf("Identity Center not enabled in config")
+		return nil, fmt.Errorf("identity center not enabled in config")
 	}
 
 	if !ec.CanAccessIdentityCenter() {

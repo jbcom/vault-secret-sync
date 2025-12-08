@@ -34,7 +34,7 @@ Examples:
   vss pipeline --config config.yaml --targets Serverless_Stg --dry-run
 
   # Merge only (no AWS sync)
-  vss merge --config config.yaml
+  vss pipeline --config config.yaml --merge-only
 
   # Validate configuration
   vss validate --config config.yaml
